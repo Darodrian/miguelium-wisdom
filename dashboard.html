@@ -46,6 +46,7 @@
     outline: none; transition: border-color .15s ease;
   }
   input:focus { border-color: rgba(255,211,77,0.55); }
+  input[type="checkbox"] { width: auto; padding: 0; border: 0; background: none; accent-color: var(--accent); flex: 0 0 auto; }
   .row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
   .seg { display: flex; gap: 8px; }
   .seg button { flex: 1 1 0; }
@@ -78,33 +79,26 @@
   <div style="display:flex; flex-direction:column; gap:18px;">
     <div>
       <h1>Miguelium Wisdom</h1>
-      <div class="status"><span class="dot" id="dot-tw"></span><span id="status-tw">Sin canal</span></div>
-      <div class="status" style="margin-top:6px"><span class="dot" id="dot-ov"></span><span id="status-ov">Sin sala</span></div>
+      <div class="status"><span class="dot" id="dot-ov"></span><span id="status-ov">Sin sala</span></div>
       <div class="msg" id="msg" hidden></div>
     </div>
 
     <div class="panel">
-      <h2>Canal y monto</h2>
+      <h2>Configuración</h2>
       <label class="field">Canal de Twitch
-        <input id="channel" placeholder="mituCanal" spellcheck="false">
+        <input id="channel" spellcheck="false">
       </label>
-      <label class="field">Bits para redimir (cheer exacto)
+      <label class="field">Bits
         <div class="row">
           <input id="amount" type="number" min="1" step="1" style="flex:1" value="100">
           <button id="btn-save" type="button">Guardar</button>
         </div>
       </label>
-      <p class="note">Solo un cheer de <b style="color:var(--text)">exactamente</b> ese monto dispara la sabiduria. El monto se envia al overlay al instante.</p>
-    </div>
-
-    <div class="panel">
-      <h2>Clave</h2>
       <div class="keybar">
         <span>Clave: <em class="none" id="keynone">sin generar</em><code id="keyval" hidden></code></span>
         <button type="button" id="btn-copy" disabled>Copiar URL de OBS</button>
         <button type="button" id="btn-key">Generar clave</button>
       </div>
-      <p class="note">Cada canal usa su propia clave: sala privada entre tu panel y tu overlay.</p>
     </div>
 
     <div class="panel">
@@ -113,7 +107,7 @@
         <button id="btn-flip" type="button" aria-pressed="false">Voltear horizontal</button>
       </div>
       <button type="button" id="btn-test">Probar animacion</button>
-      <p class="note">El volteo se aplica al overlay de OBS al instante. Al recargar el overlay, Miguelium vuelve a mirar como en el PNG original.</p>
+      <label class="row"><input id="test-overlay" type="checkbox" checked> Mostrar tambien en el overlay de OBS</label>
     </div>
 
     <div class="panel">
@@ -138,11 +132,10 @@ import {
 
 const $ = (id) => document.getElementById(id);
 const CHANNEL_IN = $('channel'), AMOUNT_IN = $('amount');
-const DOT_TW = $('dot-tw'), STATUS_TW = $('status-tw');
 const DOT_OV = $('dot-ov'), STATUS_OV = $('status-ov');
 const KEY_VAL = $('keyval'), KEY_NONE = $('keynone');
 const BTN_KEY = $('btn-key'), BTN_COPY = $('btn-copy'), BTN_SAVE = $('btn-save');
-const BTN_FLIP = $('btn-flip'), BTN_TEST = $('btn-test');
+const BTN_FLIP = $('btn-flip'), BTN_TEST = $('btn-test'), TEST_OVERLAY = $('test-overlay');
 const PREVIEW = $('preview'), PREVIEW_NOTE = $('preview-note'), EVENTS = $('events'), MSG = $('msg');
 
 const DEFAULT_AMOUNT = cfg.amountDefault ?? 100;
@@ -157,7 +150,6 @@ let roomBridge = null;
 let roomGen = 0;
 let flashTimer = null;
 
-function setTwitch(kind, text) { DOT_TW.className = 'dot' + (kind ? ' ' + kind : ''); STATUS_TW.textContent = text; }
 function setOverlay(kind, text) { DOT_OV.className = 'dot' + (kind ? ' ' + kind : ''); STATUS_OV.textContent = text; }
 
 function flash(text) {
@@ -217,13 +209,8 @@ async function copyText(text) {
 }
 
 function startComfy() {
-  if (!channel) { setTwitch('', 'Sin canal'); return; }
-  if (!window.ComfyJS) { setTwitch('err', 'No se pudo cargar el chat'); return; }
-  if (window.ComfyJS && ComfyJS.Disconnect) ComfyJS.Disconnect();
-  setTwitch('busy', 'Conectando...');
-  ComfyJS.onConnected = () => setTwitch('live', 'Conectado');
-  ComfyJS.onReconnect = () => setTwitch('busy', 'Reconectando...');
-  ComfyJS.onError = () => setTwitch('err', 'Sin conexion');
+  if (!channel || !window.ComfyJS) return;
+  if (ComfyJS.Disconnect) ComfyJS.Disconnect();
   ComfyJS.onCheer = (user, message, bits) => logEvent(user, bits);
   ComfyJS.Init(channel);
 }
@@ -310,6 +297,10 @@ BTN_FLIP.addEventListener('click', () => {
 });
 
 BTN_TEST.addEventListener('click', () => {
+  if (TEST_OVERLAY.checked && roomBridge && roomActive) {
+    roomBridge.sendTest();
+    return;
+  }
   const win = PREVIEW.contentWindow;
   if (win) win.postMessage({ type: 'test' }, '*');
 });

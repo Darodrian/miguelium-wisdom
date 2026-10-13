@@ -75,7 +75,7 @@ function overlayUrl(channel, key) {
 
 // ---- sala realtime (panel <-> overlay) ----
 export function createBridge(room) {
-  const handlers = { status: [], hello: [], ping: [], set: [], flip: [] };
+  const handlers = { status: [], hello: [], ping: [], set: [], flip: [], test: [] };
   let channel = null;
   let client = null;
 
@@ -99,6 +99,7 @@ export function createBridge(room) {
     listen('ping', (p) => handlers.ping.forEach((h) => h(p)));
     listen('set', (p) => handlers.set.forEach((h) => h(p)));
     listen('flip', (p) => handlers.flip.forEach((h) => h(p)));
+    listen('test', (p) => handlers.test.forEach((h) => h(p)));
     return new Promise((resolve, reject) => {
       let settled = false;
       const finish = (fn, arg) => {
@@ -131,11 +132,13 @@ export function createBridge(room) {
     sendPing() { send('ping', { at: Date.now() }); },
     sendSet(amount) { send('set', { amount: Math.max(1, Math.floor(Number(amount) || 100)) }); },
     sendFlip(flip) { send('flip', { flip: !!flip }); },
+    sendTest() { send('test', { at: Date.now() }); },
     onStatus(fn) { handlers.status.push(fn); },
     onHello(fn) { handlers.hello.push(fn); },
     onPing(fn) { handlers.ping.push(fn); },
     onSet(fn) { handlers.set.push(fn); },
     onFlip(fn) { handlers.flip.push(fn); },
+    onTest(fn) { handlers.test.push(fn); },
   };
 }
 
