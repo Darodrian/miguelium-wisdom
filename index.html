@@ -188,8 +188,9 @@ if (configured() && KEY) {
   bridge.onTest(() => enqueue());
   bridge.onPing(() => bridge.sendHello());
   bridge.onStatus((s) => {
-    if (s === 'SUBSCRIBED' && !helloTimer) {
-      helloTimer = setInterval(() => bridge.sendHello(), 25000);
+    if (s === 'SUBSCRIBED') {
+      bridge.sendHello();
+      if (!helloTimer) helloTimer = setInterval(() => bridge.sendHello(), 25000);
     }
   });
   bridge.connect().catch((e) => {

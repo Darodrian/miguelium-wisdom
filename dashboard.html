@@ -149,6 +149,7 @@ let roomActive = false;
 let roomBridge = null;
 let roomGen = 0;
 let flashTimer = null;
+let comfyOn = false;
 
 function setOverlay(kind, text) { DOT_OV.className = 'dot' + (kind ? ' ' + kind : ''); STATUS_OV.textContent = text; }
 
@@ -210,9 +211,11 @@ async function copyText(text) {
 
 function startComfy() {
   if (!channel || !window.ComfyJS) return;
-  if (ComfyJS.Disconnect) ComfyJS.Disconnect();
+  if (comfyOn && ComfyJS.Disconnect) ComfyJS.Disconnect();
+  comfyOn = false;
   ComfyJS.onCheer = (user, message, bits) => logEvent(user, bits);
   ComfyJS.Init(channel);
+  comfyOn = true;
 }
 
 async function startRoom() {
@@ -222,6 +225,7 @@ async function startRoom() {
   lastHello = 0;
   if (gen !== roomGen) return;
   if (!configured() || !channel || !key) { setOverlay('', 'Sin sala'); return; }
+  setOverlay('busy', 'Conectando...');
   try {
     roomBridge = createBridge(key);
     roomBridge.onStatus((s) => {
