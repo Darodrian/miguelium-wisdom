@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Miguelium Wisdom</title>
+<link rel="icon" href="data:,">
+<script src="https://cdn.jsdelivr.net/npm/comfy.js@1.1.29/dist/comfy.min.js"></script>
+<style>
+  html, body { margin: 0; background: transparent; overflow: hidden; }
+  #stage {
+    position: fixed; inset: 0;
+    display: flex; align-items: flex-end; justify-content: center;
+    pointer-events: none; padding-bottom: 6vh;
+  }
+  #actor {
+    display: flex; flex-direction: column; align-items: center;
+    opacity: 0; transform: scale(0.6) translateY(24px);
+    transform-origin: 50% 100%;
+    transition: opacity .3s ease, transform .3s ease;
+  }
+  #actor.on { opacity: 1; transform: none; }
+  #actor.out { opacity: 0; transform: scale(0.92) translateY(10px); transition: opacity .4s ease, transform .4s ease; }
+  #bubble {
+    position: relative; max-width: min(620px, 72vw);
+    padding: 14px 22px; margin-bottom: 16px;
+    background: rgba(255,255,255,.96); color: #101010;
+    border-radius: 16px; box-shadow: 0 8px 28px rgba(0,0,0,.38);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 26px; line-height: 1.35; text-align: center;
+  }
+  #bubble::after {
+    content: ''; position: absolute; bottom: -14px; left: 50%;
+    transform: translateX(-50%); border: 14px solid transparent;
+    border-top-color: rgba(255,255,255,.96); border-bottom: none;
+  }
+  #bubble .who {
+    display: block; margin-top: 8px;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 15px; font-style: italic; color: #767676;
+  }
+  #img-mig {
+    height: 38vh; max-height: 430px; width: auto;
+    filter: drop-shadow(0 12px 22px rgba(0,0,0,.45));
+    transition: transform .25s ease;
+  }
+  #img-mig.flip { transform: scaleX(-1); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="actor">
+    <div id="bubble"><span id="text"></span><span class="who" id="who"></span></div>
+    <img id="img-mig" src="miguelium.png" alt="Miguelium">
+  </div>
+</div>
+
+<script type="module">
+import {
+  cfg, configured, overlayChannel, overlayKey,
+  savedAmount, saveAmount, createBridge,
+} from './js/bridge.js';
+
+const CHANNEL = overlayChannel();
+const KEY = overlayKey();
+const $ = (id) => document.getElementById(id);
+
+const TYPE_MS = cfg.typeMs ?? 35;
+const LINGER_MS = cfg.lingerMs ?? 4000;
+const FADE_MS = cfg.fadeMs ?? 400;
+
+const FALLBACK_PHRASES = [
+  'A quien madruga, Dios le ayuda.',
+  'Mas vale tarde que nunca.',
+  'No hay mal que por bien no venga.',
+];
+
+const actor = $('actor');
+const textEl = $('text');
+const whoEl = $('who');
+const migEl = $('img-mig');
+
+let amount = savedAmount(CHANNEL, cfg.amountDefault ?? 100);
+let flip = false;
+let phrases = FALLBACK_PHRASES.slice();
+let lastIndex = -1;
+let showing = false;
+let hideTimer = null;
+let typeTimer = null;
+let helloTimer = null;
+const queue = [];
+
+async function loadPhrases() {
+  try {
+    const res = await fetch('refranes.json');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        phrases = data.filter((s) => typeof s === 'string' && s.trim()).map((s) => s.trim());
+      }
+    }
+  } catch (e) { /* sin lista */ }
+  if (!phrases.length) phrases = FALLBACK_PHRASES.slice();
+}
+
+function pickPhrase() {
+  if (!phrases.length) return '...';
+  if (phrases.length === 1) return phrases[0];
+  let i = Math.floor(Math.random() * phrases.length);
+  if (i === lastIndex) i = (i + 1) % phrases.length;
+  lastIndex = i;
+  return phrases[i];
+}
+
+function applyFlip() {
+  migEl.classList.toggle('flip', flip);
+}
+
+function enqueue(user) {
+  queue.push({ phrase: pickPhrase(), user: user || '' });
+  next();
+}
+
+function next() {
+  if (showing || !queue.length) return;
+  showing = true;
+  const job = queue.shift();
+  show(job);
+}
+
+function stopFx() {
+  if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
+  if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+}
+
+function show(job) {
+  stopFx();
+  textEl.textContent = '';
+  whoEl.textContent = job.user ? '— ' + job.user : '';
+
+  actor.classList.remove('out');
+  // Fuerza un repintado para que la transicion de entrada siempre se vea.
+  void actor.offsetWidth;
+  actor.classList.add('on');
+
+  let i = 0;
+  typeTimer = setInterval(() => {
+    i++;
+    textEl.textContent = job.phrase.slice(0, i);
+    if (i >= job.phrase.length) {
+      stopFx();
+      hideTimer = setTimeout(() => {
+        actor.classList.add('out');
+        hideTimer = setTimeout(() => {
+          actor.classList.remove('on', 'out');
+          showing = false;
+          next();
+        }, FADE_MS);
+      }, LINGER_MS);
+    }
+  }, TYPE_MS);
+}
+
+// Un cheer que coincide exactamente con el monto activo dispara la reaccion.
+if (window.ComfyJS) {
+  ComfyJS.onCheer = (user, message, bits) => {
+    if (bits === amount) enqueue(user);
+  };
+  ComfyJS.onConnected = () => { document.title = 'Miguelium Wisdom · ' + CHANNEL; };
+  ComfyJS.onError = () => { /* el overlay sigue en pie aun sin chat */ };
+  if (CHANNEL) {
+    ComfyJS.Init(CHANNEL);
+  } else {
+    console.warn('Miguelium: falta el canal en la URL (#c=...)');
+  }
+} else {
+  console.error('Miguelium: no se pudo cargar ComfyJS (sin reacciones a cheers)');
+}
+
+if (configured() && KEY) {
+  const bridge = createBridge(KEY);
+  bridge.onSet((p) => {
+    const n = Number(p && p.amount);
+    if (Number.isFinite(n) && n > 0) {
+      amount = Math.floor(n);
+      saveAmount(CHANNEL, amount);
+    }
+  });
+  bridge.onFlip((p) => {
+    if (p && typeof p.flip === 'boolean') {
+      flip = p.flip;
+      applyFlip();
+    }
+  });
+  bridge.onPing(() => bridge.sendHello());
+  bridge.onStatus((s) => {
+    if (s === 'SUBSCRIBED' && !helloTimer) {
+      helloTimer = setInterval(() => bridge.sendHello(), 25000);
+    }
+  });
+  bridge.connect().catch((e) => {
+    console.error('Miguelium: sala', (e && e.message) || e);
+  });
+} else {
+  console.warn('Miguelium: sin clave (#k=...) — solo reacciones sin sincronizacion');
+}
+
+// Boton Test del panel: dispara el overlay en la misma pagina.
+window.addEventListener('message', (ev) => {
+  if (ev.origin !== location.origin) return;
+  const d = ev.data;
+  if (d && d.type === 'test') enqueue('');
+});
+
+loadPhrases();
+</script>
+</body>
+</html>

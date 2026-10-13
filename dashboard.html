@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Miguelium Wisdom · Control</title>
+<link rel="icon" href="data:,">
+<script src="https://cdn.jsdelivr.net/npm/comfy.js@1.1.29/dist/comfy.min.js"></script>
+<style>
+  :root {
+    --panel: rgba(16, 24, 39, 0.72);
+    --line: rgba(255, 255, 255, 0.08);
+    --text: #e8ecf4;
+    --muted: #93a0b8;
+    --accent: #ffd34d;
+    --danger: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 22px; min-height: 100vh;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    color: var(--text);
+    background: #0b1018;
+  }
+  h1 { margin: 0 0 4px; font-size: 20px; }
+  h2 { margin: 0 0 12px; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); }
+  .wrap { display: grid; grid-template-columns: 340px 1fr; gap: 18px; max-width: 1100px; margin: 0 auto; }
+  @media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    padding: 16px 18px; display: flex; flex-direction: column; gap: 14px;
+  }
+  .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+  .msg { font-size: 12px; color: var(--accent); min-height: 16px; margin-top: 8px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #64748b; flex: 0 0 auto; }
+  .dot.live { background: #34d399; }
+  .dot.busy { background: var(--accent); }
+  .dot.err { background: var(--danger); }
+  label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); }
+  input, .keybar code {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+  input {
+    padding: 9px 11px; border-radius: 10px; border: 1px solid var(--line);
+    background: rgba(255,255,255,0.06); color: var(--text); font-size: 14px;
+    outline: none; transition: border-color .15s ease;
+  }
+  input:focus { border-color: rgba(255,211,77,0.55); }
+  .row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .seg { display: flex; gap: 8px; }
+  .seg button { flex: 1 1 0; }
+  button {
+    padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: rgba(255,255,255,0.06); color: var(--text); font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: background .15s ease, border-color .15s ease;
+  }
+  button:hover:not(:disabled) { background: rgba(255,211,77,0.16); border-color: rgba(255,211,77,0.35); }
+  button:disabled { opacity: 0.35; cursor: default; }
+  .seg button.on { background: rgba(255,211,77,0.18); border-color: rgba(255,211,77,0.45); color: var(--accent); }
+  .keybar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    font-size: 12px; color: var(--muted);
+  }
+  .keybar code { color: var(--accent); word-break: break-all; }
+  .keybar button { padding: 5px 10px; font-size: 11px; }
+  .keybar .none { font-style: italic; }
+  .note { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  #preview-shell { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: #000; }
+  #preview { width: 100%; height: 100%; border: 0; display: block; }
+  #events { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+  #events li { color: var(--muted); }
+  #events li.ok { color: #34d399; }
+  #events .empty { font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div style="display:flex; flex-direction:column; gap:18px;">
+    <div>
+      <h1>Miguelium Wisdom</h1>
+      <div class="status"><span class="dot" id="dot-tw"></span><span id="status-tw">Sin canal</span></div>
+      <div class="status" style="margin-top:6px"><span class="dot" id="dot-ov"></span><span id="status-ov">Sin sala</span></div>
+      <div class="msg" id="msg" hidden></div>
+    </div>
+
+    <div class="panel">
+      <h2>Canal y monto</h2>
+      <label class="field">Canal de Twitch
+        <input id="channel" placeholder="mituCanal" spellcheck="false">
+      </label>
+      <label class="field">Bits para redimir (cheer exacto)
+        <div class="row">
+          <input id="amount" type="number" min="1" step="1" style="flex:1" value="100">
+          <button id="btn-save" type="button">Guardar</button>
+        </div>
+      </label>
+      <p class="note">Solo un cheer de <b style="color:var(--text)">exactamente</b> ese monto dispara la sabiduria. El monto se envia al overlay al instante.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Clave</h2>
+      <div class="keybar">
+        <span>Clave: <em class="none" id="keynone">sin generar</em><code id="keyval" hidden></code></span>
+        <button type="button" id="btn-copy" disabled>Copiar URL de OBS</button>
+        <button type="button" id="btn-key">Generar clave</button>
+      </div>
+      <p class="note">Cada canal usa su propia clave: sala privada entre tu panel y tu overlay.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Vista</h2>
+      <div class="seg">
+        <button id="btn-flip" type="button" aria-pressed="false">Voltear horizontal</button>
+      </div>
+      <button type="button" id="btn-test">Probar animacion</button>
+      <p class="note">El volteo se aplica al overlay de OBS al instante. Al recargar el overlay, Miguelium vuelve a mirar como en el PNG original.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Eventos</h2>
+      <ul id="events"><li class="empty">Esperando cheers...</li></ul>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Vista previa</h2>
+    <div id="preview-shell"><iframe id="preview" title="Vista previa del overlay" hidden></iframe></div>
+    <p class="note" id="preview-note">Genera una clave para ver aqui el mismo overlay que se pone en OBS.</p>
+  </div>
+</div>
+
+<script type="module">
+import {
+  cfg, configured, savedChannel, saveChannel,
+  savedKey, saveKey, hasKey, generateKey,
+  savedAmount, saveAmount, overlayUrl, createBridge,
+} from './js/bridge.js';
+
+const $ = (id) => document.getElementById(id);
+const CHANNEL_IN = $('channel'), AMOUNT_IN = $('amount');
+const DOT_TW = $('dot-tw'), STATUS_TW = $('status-tw');
+const DOT_OV = $('dot-ov'), STATUS_OV = $('status-ov');
+const KEY_VAL = $('keyval'), KEY_NONE = $('keynone');
+const BTN_KEY = $('btn-key'), BTN_COPY = $('btn-copy'), BTN_SAVE = $('btn-save');
+const BTN_FLIP = $('btn-flip'), BTN_TEST = $('btn-test');
+const PREVIEW = $('preview'), PREVIEW_NOTE = $('preview-note'), EVENTS = $('events'), MSG = $('msg');
+
+const DEFAULT_AMOUNT = cfg.amountDefault ?? 100;
+const OVERLAY_TTL = 90000;
+
+let channel = savedChannel();
+let key = '';
+let flip = false;
+let lastHello = 0;
+let roomActive = false;
+let roomBridge = null;
+let roomGen = 0;
+let flashTimer = null;
+
+function setTwitch(kind, text) { DOT_TW.className = 'dot' + (kind ? ' ' + kind : ''); STATUS_TW.textContent = text; }
+function setOverlay(kind, text) { DOT_OV.className = 'dot' + (kind ? ' ' + kind : ''); STATUS_OV.textContent = text; }
+
+function flash(text) {
+  MSG.textContent = text;
+  MSG.hidden = false;
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => {
+    MSG.hidden = true;
+    MSG.textContent = '';
+  }, 5000);
+}
+
+function showKey() {
+  const has = !!key;
+  KEY_VAL.textContent = key;
+  KEY_VAL.hidden = !has;
+  KEY_NONE.hidden = has;
+  BTN_COPY.disabled = !has || !channel;
+  BTN_KEY.textContent = has ? 'Cambiar clave' : 'Generar clave';
+}
+
+function updatePreview() {
+  if (channel && key) {
+    PREVIEW.src = overlayUrl(channel, key);
+    PREVIEW.hidden = false;
+    PREVIEW_NOTE.textContent = 'Preview en vivo: lo que veas aqui es lo que se pone en OBS.';
+  } else {
+    PREVIEW.hidden = true;
+    PREVIEW_NOTE.textContent = 'Genera una clave para ver aqui el mismo overlay que se pone en OBS.';
+  }
+}
+
+function logEvent(user, bits) {
+  const active = savedAmount(channel, DEFAULT_AMOUNT);
+  const ok = bits === active;
+  if (EVENTS.querySelector('.empty')) EVENTS.textContent = '';
+  const li = document.createElement('li');
+  li.className = ok ? 'ok' : '';
+  li.textContent = (ok ? '✔ ' : '✘ ') + user + ' · ' + bits + ' bits' + (ok ? ' — redimido' : ' — ignorado (no es ' + active + ')');
+  EVENTS.prepend(li);
+  while (EVENTS.children.length > 5) EVENTS.lastChild.remove();
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (err) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e2) { /* sin portapapeles */ }
+    ta.remove();
+  }
+}
+
+function startComfy() {
+  if (!channel) { setTwitch('', 'Sin canal'); return; }
+  if (!window.ComfyJS) { setTwitch('err', 'No se pudo cargar el chat'); return; }
+  if (window.ComfyJS && ComfyJS.Disconnect) ComfyJS.Disconnect();
+  setTwitch('busy', 'Conectando...');
+  ComfyJS.onConnected = () => setTwitch('live', 'Conectado');
+  ComfyJS.onReconnect = () => setTwitch('busy', 'Reconectando...');
+  ComfyJS.onError = () => setTwitch('err', 'Sin conexion');
+  ComfyJS.onCheer = (user, message, bits) => logEvent(user, bits);
+  ComfyJS.Init(channel);
+}
+
+async function startRoom() {
+  const gen = ++roomGen;
+  if (roomBridge) { await roomBridge.leave(); roomBridge = null; }
+  roomActive = false;
+  lastHello = 0;
+  if (gen !== roomGen) return;
+  if (!configured() || !channel || !key) { setOverlay('', 'Sin sala'); return; }
+  try {
+    roomBridge = createBridge(key);
+    roomBridge.onStatus((s) => {
+      if (s === 'CHANNEL_ERROR') setOverlay('err', 'Clave rechazada');
+      else if (s === 'TIMED_OUT') setOverlay('err', 'Sin respuesta');
+      else if (s === 'CLOSED') setOverlay('', 'Sala cerrada');
+    });
+    roomBridge.onHello(() => {
+      lastHello = Date.now();
+      setOverlay('live', 'Overlay conectado');
+      // Confirma el monto guardado por si el overlay se abrio recien.
+      roomBridge.sendSet(savedAmount(channel, DEFAULT_AMOUNT));
+    });
+    await roomBridge.connect();
+    if (gen !== roomGen) return;
+    roomActive = true;
+    lastHello = Date.now();
+    roomBridge.sendPing();
+    roomBridge.sendSet(savedAmount(channel, DEFAULT_AMOUNT));
+  } catch (e) {
+    if (gen !== roomGen) return;
+    const m = (e && e.message) || '';
+    setOverlay('err', m === 'CHANNEL_ERROR' ? 'Clave rechazada' : m === 'TIMED_OUT' ? 'Sin respuesta' : 'No se pudo conectar la sala');
+  }
+}
+
+CHANNEL_IN.addEventListener('change', () => {
+  saveChannel(CHANNEL_IN.value);
+  channel = savedChannel();
+  key = savedKey(channel);
+  AMOUNT_IN.value = String(savedAmount(channel, DEFAULT_AMOUNT));
+  showKey();
+  startComfy();
+  startRoom();
+  updatePreview();
+});
+
+BTN_SAVE.addEventListener('click', () => {
+  if (!channel) { flash('Escribe tu canal primero'); return; }
+  const v = Math.max(1, Math.floor(Number(AMOUNT_IN.value) || DEFAULT_AMOUNT));
+  AMOUNT_IN.value = String(v);
+  saveAmount(channel, v);
+  if (roomBridge) roomBridge.sendSet(v);
+  flash('Monto guardado: ' + v + ' bits');
+});
+
+BTN_KEY.addEventListener('click', async () => {
+  if (!channel) { flash('Escribe tu canal primero'); return; }
+  const had = hasKey(channel);
+  const msg = had
+    ? 'Se generara una clave nueva.\n\nEl overlay dejara de sincronizarse hasta que pegues la nueva URL en OBS (Fuente Browser > URL). Tendras que copiarla de nuevo.'
+    : 'Se generara una clave para tu overlay.\n\nDespues copiala con "Copiar URL de OBS" y pegala en la fuente Browser de OBS.';
+  if (!confirm(msg)) return;
+  key = generateKey();
+  saveKey(channel, key);
+  showKey();
+  await startRoom();
+  updatePreview();
+  await copyText(overlayUrl(channel, key));
+  flash(had ? 'Clave nueva generada y URL copiada. Actualiza OBS.' : 'Clave generada y URL copiada. Pegala en OBS.');
+});
+
+BTN_COPY.addEventListener('click', async () => {
+  await copyText(overlayUrl(channel, key));
+  flash('URL de OBS copiada');
+});
+
+BTN_FLIP.addEventListener('click', () => {
+  flip = !flip;
+  BTN_FLIP.classList.toggle('on', flip);
+  BTN_FLIP.setAttribute('aria-pressed', String(flip));
+  if (roomBridge) roomBridge.sendFlip(flip);
+});
+
+BTN_TEST.addEventListener('click', () => {
+  const win = PREVIEW.contentWindow;
+  if (win) win.postMessage({ type: 'test' }, '*');
+});
+
+setInterval(() => {
+  if (roomActive && Date.now() - lastHello > OVERLAY_TTL) setOverlay('', 'Overlay sin conexion');
+}, 5000);
+
+// Inicio: recupera la configuracion guardada de este canal.
+if (channel) {
+  CHANNEL_IN.value = channel;
+  key = savedKey(channel);
+  AMOUNT_IN.value = String(savedAmount(channel, DEFAULT_AMOUNT));
+  showKey();
+  startComfy();
+  startRoom();
+  updatePreview();
+} else {
+  showKey();
+}
+</script>
+</body>
+</html>
