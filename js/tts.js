@@ -6,17 +6,21 @@ const SPRITE_WAV = `https://raw.githubusercontent.com/izure1/animalese-tts/${SHA
 const SPRITE_MAP = `https://raw.githubusercontent.com/izure1/animalese-tts/${SHA}/docs/sounds/english-sprite.json`;
 const SPRITE_WAV_BYTES = 1279244;
 
-class VoiceChain {
-  constructor() {
+// El ctor viene inyectado desde loadEngine: VoiceChain es codigo de modulo y
+// la libreria solo es visible dentro de loadEngine (import dinamico del CDN).
+export class VoiceChain {
+  constructor(PitchManagerCtor) {
     this.pitch = 1.5;
     this.speed = 4;
     this.randomness = 0.1;
     this.melodyRate = 0.05;
     this.melodyAmplitude = 0.1;
-    this.#manager = new PitchManager(this);
+    this.#pitchManagerCtor = PitchManagerCtor;
+    this.#manager = new PitchManagerCtor(this);
   }
 
   #manager;
+  #pitchManagerCtor;
 
   setVoice(voice) {
     if (Number.isFinite(voice.pitch)) this.pitch = voice.pitch;
@@ -24,7 +28,7 @@ class VoiceChain {
     if (Number.isFinite(voice.randomness)) this.randomness = voice.randomness;
     if (Number.isFinite(voice.melodyRate)) this.melodyRate = voice.melodyRate;
     if (Number.isFinite(voice.melodyAmplitude)) this.melodyAmplitude = voice.melodyAmplitude;
-    this.#manager = new PitchManager(this);
+    this.#manager = new (this.#pitchManagerCtor)(this);
   }
 
   calculatePitch(charIndex) {
@@ -76,7 +80,7 @@ export async function loadEngine() {
     const spriteUrl = URL.createObjectURL(wav);
 
     const sampler = new WebSampler(spriteUrl, map);
-    voiceChain = new VoiceChain();
+    voiceChain = new VoiceChain(PitchManager);
     player = new WebPlayer();
 
     engine = new AnimaleseEngine({
