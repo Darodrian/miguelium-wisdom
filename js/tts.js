@@ -40,10 +40,14 @@ let engine = null;
 let player = null;
 let voiceChain = null;
 let loadPromise = null;
+let spriteRate = 0;
 
 export function playerAudioState() {
   try {
-    return player?.audioContext?.state ?? 'none';
+    // Con sampleRate puesto el contexto del jugador ya existe; sin el, no lo
+    // crees aqui (se crea en el primer speak, tras el primer gesto posible).
+    if (!player || !player.sampleRate) return 'none';
+    return player.audioContext?.state ?? 'none';
   } catch {
     return 'none';
   }
@@ -85,7 +89,9 @@ export async function loadEngine() {
     });
 
     await engine.load();
-    player.sampleRate = sampler.sampleRate;
+    // El contexto del WebPlayer se crea en el primer speak (ya con posible
+    // activacion de usuario), no aqui en arranque sin ningun gesto.
+    spriteRate = sampler.sampleRate;
 
     return engine;
   })();
@@ -106,6 +112,11 @@ async function speakNow(message, { onDuration, isCancelled } = {}) {
   // al destrabarse, esta comprobacion corta antes de sintetizar y sonar.
   if (isCancelled && isCancelled()) return { samples: 0, voice: null };
 
+  // Contexto del jugador: crearlo tarde (en el primer speak, con posible
+  // activacion de usuario) y apuntarlo como destrabe para unlockAudio.
+  if (!player.sampleRate && spriteRate) player.sampleRate = spriteRate;
+  addPlaybackTarget(player.audioContext);
+
   const voice = drawVoice();
   voiceChain.setVoice(voice);
 
@@ -123,6 +134,11 @@ async function speakNow(message, { onDuration, isCancelled } = {}) {
 
   onDuration?.(Math.round((total / (player.sampleRate || 48000)) * 1000));
 
+  // Mejor esfuerzo: si ya hay activacion, suena ya; si no, unlockAudio lo
+  // destrabara con el siguiente gesto (el sonido pendiente arranca al
+  // reanudarse y la cadena no se queda colgada).
+  try { await player.audioContext.resume(); } catch {}
+
   await player.drainAndPlay(buffers);
   return { samples: total, voice };
 }
@@ -138,6 +154,13 @@ export function speak(message, opts) {
 let probe = null;
 let unlockTimer = null;
 let unlockAttempts = 0;
+
+// Contextos reales de reproduccion: unlockAudio los destraba junto al probe.
+const playbackTargets = new Set();
+
+export function addPlaybackTarget(ctx) {
+  if (ctx) playbackTargets.add(ctx);
+}
 
 export function audioState() {
   return probe?.state ?? 'none';
@@ -163,10 +186,10 @@ export async function unlockAudio({ attempts = 40, intervalMs = 250 } = {}) {
   };
 
   const nudge = async () => {
-    if (probe.state === 'running') { cleanup(); return true; }
-    try {
-      await probe.resume();
-    } catch {}
+    const ctxs = [probe, ...playbackTargets].filter((c) => c && typeof c.resume === 'function');
+    await Promise.all(ctxs.map(async (c) => {
+      try { await c.resume(); } catch {}
+    }));
     if (probe.state === 'running') { cleanup(); return true; }
     return false;
   };
