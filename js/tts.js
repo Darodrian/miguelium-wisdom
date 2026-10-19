@@ -46,6 +46,12 @@ let voiceChain = null;
 let loadPromise = null;
 let spriteRate = 0;
 
+// Mudo del preview: silencia la reproduccion sin perder el ritmo de tecleo.
+let muted = false;
+
+export function setMuted(v) { muted = !!v; }
+export function isMuted() { return muted; }
+
 export function playerAudioState() {
   try {
     // Con sampleRate puesto el contexto del jugador ya existe; sin el, no lo
@@ -137,6 +143,10 @@ async function speakNow(message, { onDuration, isCancelled } = {}) {
   if (!total) return { samples: 0, voice };
 
   onDuration?.(Math.round((total / (player.sampleRate || 48000)) * 1000));
+
+  // Mudo: el globo sigue al ritmo calculado, pero no se reproduce audio y
+  // la cadena queda libre al instante.
+  if (muted) return { samples: total, voice };
 
   // Mejor esfuerzo: si ya hay activacion, suena ya; si no, unlockAudio lo
   // destrabara con el siguiente gesto (el sonido pendiente arranca al

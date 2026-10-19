@@ -6,6 +6,7 @@ const SUPA_URL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/+es
 const CHANNEL_STORE = 'mw_channel';
 const KEY_PFX = 'mw_key_';
 const AMOUNT_PFX = 'mw_amount_';
+const PREVIEW_MUTE_STORE = 'mw_preview_mute';
 const KEY_ALPHABET = '23456789abcdefghjkmnpqrstuvwxyz';
 
 function storageGet(key, def) {
@@ -61,6 +62,10 @@ function savedAmount(channel, def) {
 function saveAmount(channel, n) {
   storageSet(AMOUNT_PFX + norm(channel), Math.max(1, Math.floor(Number(n) || 100)));
 }
+
+// ---- mute del preview (estado solo del panel) ----
+function savedPreviewMute() { return storageGet(PREVIEW_MUTE_STORE, '') === '1'; }
+function savePreviewMute(v) { storageSet(PREVIEW_MUTE_STORE, v ? '1' : '0'); }
 
 function configured() {
   return !!(cfg.supabaseUrl && cfg.supabaseKey);
@@ -147,4 +152,5 @@ export {
   savedChannel, saveChannel, overlayChannel, overlayKey,
   savedKey, saveKey, hasKey, generateKey,
   savedAmount, saveAmount, overlayUrl,
+  savedPreviewMute, savePreviewMute,
 };

@@ -108,6 +108,7 @@
       </div>
       <button type="button" id="btn-test">Probar animacion</button>
       <label class="row"><input id="test-overlay" type="checkbox" checked> Mostrar tambien en el overlay de OBS</label>
+      <label class="row"><input id="mute-preview" type="checkbox"> Silenciar voz del preview</label>
     </div>
 
     <div class="panel">
@@ -128,6 +129,7 @@ import {
   cfg, configured, savedChannel, saveChannel,
   savedKey, saveKey, hasKey, generateKey,
   savedAmount, saveAmount, overlayUrl, createBridge,
+  savedPreviewMute, savePreviewMute,
 } from './js/bridge.js';
 
 const $ = (id) => document.getElementById(id);
@@ -136,6 +138,7 @@ const DOT_OV = $('dot-ov'), STATUS_OV = $('status-ov');
 const KEY_VAL = $('keyval'), KEY_NONE = $('keynone');
 const BTN_KEY = $('btn-key'), BTN_COPY = $('btn-copy'), BTN_SAVE = $('btn-save');
 const BTN_FLIP = $('btn-flip'), BTN_TEST = $('btn-test'), TEST_OVERLAY = $('test-overlay');
+const MUTE_PREVIEW = $('mute-preview');
 const PREVIEW = $('preview'), PREVIEW_NOTE = $('preview-note'), EVENTS = $('events'), MSG = $('msg');
 
 const DEFAULT_AMOUNT = cfg.amountDefault ?? 100;
@@ -308,6 +311,20 @@ BTN_TEST.addEventListener('click', () => {
   const win = PREVIEW.contentWindow;
   if (win) win.postMessage({ type: 'test' }, '*');
 });
+
+// Mute del preview: el panel guarda el estado y el overlay solo obedece.
+// Se reenvia al cargar el iframe para que un reload no pierda el mudo.
+function sendMute() {
+  const win = PREVIEW.contentWindow;
+  if (win) win.postMessage({ type: 'mute', value: MUTE_PREVIEW.checked }, '*');
+}
+
+MUTE_PREVIEW.checked = savedPreviewMute();
+MUTE_PREVIEW.addEventListener('change', () => {
+  savePreviewMute(MUTE_PREVIEW.checked);
+  sendMute();
+});
+PREVIEW.addEventListener('load', sendMute);
 
 setInterval(() => {
   if (roomActive && Date.now() - lastHello > OVERLAY_TTL) setOverlay('', 'Overlay sin conexion');

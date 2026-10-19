@@ -55,7 +55,7 @@ import {
   cfg, configured, overlayChannel, overlayKey,
   savedAmount, saveAmount, createBridge,
 } from './js/bridge.js';
-import { speak, loadEngine, unlockAudio } from './js/tts.js';
+import { speak, loadEngine, unlockAudio, setMuted } from './js/tts.js';
 import { forSpeech, schedulePacing } from './js/speech.js';
 
 const CHANNEL = overlayChannel();
@@ -223,6 +223,7 @@ window.addEventListener('message', (ev) => {
   if (ev.origin !== location.origin) return;
   const d = ev.data;
   if (d && d.type === 'test') enqueue();
+  else if (d && d.type === 'mute') setMuted(!!d.value);
 });
 
 unlockAudio();
