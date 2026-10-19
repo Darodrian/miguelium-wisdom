@@ -55,6 +55,8 @@ import {
   cfg, configured, overlayChannel, overlayKey,
   savedAmount, saveAmount, createBridge,
 } from './js/bridge.js';
+import { speak, loadEngine, unlockAudio } from './js/tts.js';
+import { forSpeech, schedulePacing } from './js/speech.js';
 
 const CHANNEL = overlayChannel();
 const KEY = overlayKey();
@@ -63,6 +65,8 @@ const $ = (id) => document.getElementById(id);
 const TYPE_MS = cfg.typeMs ?? 35;
 const LINGER_MS = cfg.lingerMs ?? 4000;
 const FADE_MS = cfg.fadeMs ?? 400;
+// Si el motor de voz no contesta en este tiempo, el globo escribe igual sin sonido.
+const VOICE_GRACE_MS = 2500;
 
 const FALLBACK_PHRASES = [
   'A quien madruga, Dios le ayuda.',
@@ -81,6 +85,7 @@ let lastIndex = -1;
 let showing = false;
 let hideTimer = null;
 let typeTimer = null;
+let paceCancel = null;
 let helloTimer = null;
 const queue = [];
 
@@ -125,6 +130,7 @@ function next() {
 function stopFx() {
   if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
   if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+  if (paceCancel) { paceCancel(); paceCancel = null; }
 }
 
 function show(job) {
@@ -136,22 +142,34 @@ function show(job) {
   void actor.offsetWidth;
   actor.classList.add('on');
 
-  let i = 0;
-  typeTimer = setInterval(() => {
-    i++;
-    textEl.textContent = job.phrase.slice(0, i);
-    if (i >= job.phrase.length) {
-      stopFx();
-      hideTimer = setTimeout(() => {
-        actor.classList.add('out');
+  const startTyping = (perChar) => {
+    let i = 0;
+    typeTimer = setInterval(() => {
+      i++;
+      textEl.textContent = job.phrase.slice(0, i);
+      if (i >= job.phrase.length) {
+        stopFx();
         hideTimer = setTimeout(() => {
-          actor.classList.remove('on', 'out');
-          showing = false;
-          next();
-        }, FADE_MS);
-      }, LINGER_MS);
-    }
-  }, TYPE_MS);
+          actor.classList.add('out');
+          hideTimer = setTimeout(() => {
+            actor.classList.remove('on', 'out');
+            showing = false;
+            next();
+          }, FADE_MS);
+        }, LINGER_MS);
+      }
+    }, perChar);
+  };
+
+  // El globo se escribe al ritmo del audio; si la voz falla o no contesta,
+  // cae al ritmo fijo TYPE_MS y el overlay sigue funcionando sin sonido.
+  paceCancel = schedulePacing({
+    text: forSpeech(job.phrase),
+    speak,
+    fallbackPerChar: TYPE_MS,
+    graceMs: VOICE_GRACE_MS,
+    onPace: startTyping,
+  });
 }
 
 // Un cheer que coincide exactamente con el monto activo dispara la reaccion.
@@ -207,6 +225,8 @@ window.addEventListener('message', (ev) => {
   if (d && d.type === 'test') enqueue();
 });
 
+unlockAudio();
+loadEngine().catch((e) => console.warn('Miguelium: motor de voz no disponible', (e && e.message) || e));
 loadPhrases();
 </script>
 </body>
