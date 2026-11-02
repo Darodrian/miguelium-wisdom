@@ -167,6 +167,11 @@ export class EventSubClient {
                 this.connect(token);
             } catch (e) {
                 console.warn('[eventsub] reconnect token failed', e);
+                // Token was revoked (404) — stop reconnecting, nothing left to do.
+                if (e?.message?.includes('(404)') || e?.message?.includes('no_token')) {
+                    console.log('[eventsub] token revoked, stopping reconnect loop');
+                    return;
+                }
                 this.scheduleReconnect(Math.min(delayMs * 2, 30000));
             }
         }, delayMs);
