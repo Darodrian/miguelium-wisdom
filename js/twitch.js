@@ -24,15 +24,17 @@ export async function getAccessToken(broadcasterId) {
 
 // ---- EventSub WebSocket client para canal.cheer ----
 export class EventSubClient {
-    constructor(broadcasterId, onCheer) {
+    constructor(broadcasterId, onCheer, onAffiliateRequired) {
         this.broadcasterId = broadcasterId;
         this.onCheer = onCheer;
+        this.onAffiliateRequired = onAffiliateRequired;
         this.ws = null;
         this.sessionId = null;
         this.reconnectTimer = null;
         this.subscribed = false;
         this.seenMessageIds = new Set();
         this.accessToken = null;
+        this.affiliateRequired = false;
     }
 
     async connect(accessToken) {
@@ -57,6 +59,10 @@ export class EventSubClient {
             this.ws = null;
             this.sessionId = null;
             this.subscribed = false;
+            if (this.affiliateRequired) {
+                console.log('[eventsub] affiliate required, stopping reconnect loop');
+                return;
+            }
             this.scheduleReconnect();
         };
 
@@ -138,6 +144,10 @@ export class EventSubClient {
             if (!res.ok) {
                 const text = await res.text();
                 console.warn('[eventsub] subscribe failed', res.status, text);
+                if (res.status === 403) {
+                    this.affiliateRequired = true;
+                    this.onAffiliateRequired?.();
+                }
                 return;
             }
             const data = await res.json();
@@ -197,5 +207,6 @@ export class EventSubClient {
         this.ws = null;
         this.sessionId = null;
         this.subscribed = false;
+        this.affiliateRequired = false;
     }
 }

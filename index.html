@@ -204,12 +204,28 @@ async function startEventSub() {
       if (Number.isFinite(bits) && bits === amount) {
         enqueue();
       }
+    }, () => {
+      showAffiliateRequired();
     });
     eventSub.connect(token);
   } catch (e) {
     console.warn('[eventsub] start failed', (e && e.message) || e);
     // El overlay sigue en pie sin reacciones a cheers oficiales.
   }
+}
+
+function showAffiliateRequired() {
+  // Muestra un aviso en el overlay de que los cheers requieren Afiliado/Partner.
+  const notice = document.createElement('div');
+  notice.id = 'affiliate-notice';
+  notice.textContent = 'Los cheers requieren que el canal sea Afiliado o Partner de Twitch.';
+  Object.assign(notice.style, {
+    position: 'fixed', top: '10px', left: '50%', transform: 'translateX(-50%)',
+    background: 'rgba(255, 0, 0, 0.9)', color: '#fff', padding: '8px 16px',
+    borderRadius: '8px', fontSize: '14px', zIndex: 9999, pointerEvents: 'none'
+  });
+  document.body.appendChild(notice);
+  setTimeout(() => notice.remove(), 8000);
 }
 
 if (configured() && BROADCASTER_ID) {
