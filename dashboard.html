@@ -258,7 +258,10 @@ async function startRoom() {
 // ---- OAuth connect ----
 if (BTN_CONNECT) {
   BTN_CONNECT.addEventListener('click', () => {
-    const authUrl = `${TWITCH_OAUTH_BASE}/authorize`;
+    // Dile al Edge Function a qué dashboard volver tras autorizar en Twitch,
+    // ya que miguelium-wisdom y goal-overlay comparten la misma función.
+    const redirect = new URL('dashboard.html', location.href).href;
+    const authUrl = `${TWITCH_OAUTH_BASE}/authorize?redirect=${encodeURIComponent(redirect)}`;
     location.href = authUrl;
   });
 }
