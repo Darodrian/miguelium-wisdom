@@ -138,6 +138,24 @@
           <option value="bob">Subir y bajar</option>
         </select>
       </label>
+      <label class="field">Paleta de colores
+        <select id="palette-select">
+          <option value="default">Por defecto</option>
+          <option value="grape">Grape</option>
+          <option value="sapphire">Sapphire</option>
+          <option value="ocean">Ocean</option>
+          <option value="emerald">Emerald</option>
+          <option value="green">Green</option>
+          <option value="snow">Snow</option>
+          <option value="carbon">Carbon</option>
+          <option value="orange">Orange</option>
+          <option value="chocolate">Chocolate</option>
+          <option value="cherry">Cherry</option>
+          <option value="red">Red</option>
+          <option value="yellow">Yellow</option>
+          <option value="chalk">Chalk</option>
+        </select>
+      </label>
     </div>
 
     <div class="panel">
@@ -149,17 +167,16 @@
       <label class="row"><input id="test-overlay" type="checkbox" checked> Mostrar tambien en el overlay de OBS</label>
       <label class="row"><input id="mute-preview" type="checkbox"> Silenciar voz del preview</label>
     </div>
-
-    <div class="panel">
-      <h2>Eventos</h2>
-      <ul id="events"><li class="empty">Esperando cheers...</li></ul>
-    </div>
   </div>
 
   <div class="panel">
     <h2>Vista previa</h2>
     <div id="preview-shell"><iframe id="preview" title="Vista previa del overlay" hidden></iframe></div>
     <p class="note" id="preview-note">Genera una clave para ver aqui el mismo overlay que se pone en OBS.</p>
+    <div class="panel">
+      <h2>Eventos</h2>
+      <ul id="events"><li class="empty">Esperando cheers...</li></ul>
+    </div>
   </div>
 </div>
 
@@ -178,7 +195,7 @@ const BTN_CONNECT = $('btn-connect'), BTN_COPY_URL = $('btn-copy-url'), BTN_SAVE
 const BTN_LOGOUT = $('btn-logout');
 const BTN_FLIP = $('btn-flip'), BTN_TEST = $('btn-test'), TEST_OVERLAY = $('test-overlay');
 const MUTE_PREVIEW = $('mute-preview');
-const FONT_SELECT = $('font-select'), STYLE_SELECT = $('style-select'), FONT_SIZE_IN = $('font-size'), MOVEMENT_SELECT = $('movement-select');
+const FONT_SELECT = $('font-select'), STYLE_SELECT = $('style-select'), FONT_SIZE_IN = $('font-size'), MOVEMENT_SELECT = $('movement-select'), PALETTE_SELECT = $('palette-select');
 const PREVIEW = $('preview'), PREVIEW_NOTE = $('preview-note'), EVENTS = $('events'), MSG = $('msg');
 const CONNECTION_PANEL = $('connection-panel'), CONNECTION_CONNECTED = $('connection-connected');
 const CONNECTION_TITLE = $('connection-title'), CONNECTION_STATUS = $('connection-status');
@@ -194,6 +211,7 @@ let font = localStorage.getItem('mw_font') || 'Georgia';
 let style = localStorage.getItem('mw_style') || 'default';
 let fontSize = Number(localStorage.getItem('mw_fontSize')) || 22;
 let movement = localStorage.getItem('mw_movement') || 'off';
+let palette = localStorage.getItem('mw_palette') || 'default';
 let lastHello = 0;
 let roomActive = false;
 let roomBridge = null;
@@ -286,7 +304,7 @@ async function startRoom() {
     roomBridge.onHello(() => {
       lastHello = Date.now();
       setOverlay('live', 'Overlay conectado');
-      roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement });
+      roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement, palette });
     });
     await roomBridge.connect();
     if (gen !== roomGen) return;
@@ -319,7 +337,7 @@ BTN_SAVE.addEventListener('click', async () => {
   const v = Math.max(1, Math.floor(Number(AMOUNT_IN.value) || DEFAULT_AMOUNT));
   AMOUNT_IN.value = String(v);
   saveAmount(broadcasterId, v);
-  if (roomBridge) roomBridge.sendSet({ amount: v, font, style, fontSize, movement });
+  if (roomBridge) roomBridge.sendSet({ amount: v, font, style, fontSize, movement, palette });
   try {
     await saveCheerState(broadcasterId, v);
   } catch (e) {
@@ -401,23 +419,29 @@ BTN_TEST.addEventListener('click', () => {
 FONT_SELECT.addEventListener('change', () => {
   font = FONT_SELECT.value;
   localStorage.setItem('mw_font', font);
-  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize });
+  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement, palette });
 });
 STYLE_SELECT.addEventListener('change', () => {
   style = STYLE_SELECT.value;
   localStorage.setItem('mw_style', style);
-  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize });
+  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement, palette });
 });
 FONT_SIZE_IN.addEventListener('input', () => {
   fontSize = Number(FONT_SIZE_IN.value) || 22;
   localStorage.setItem('mw_fontSize', fontSize);
-  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement });
+  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement, palette });
 });
 
 MOVEMENT_SELECT.addEventListener('change', () => {
   movement = MOVEMENT_SELECT.value;
   localStorage.setItem('mw_movement', movement);
-  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement });
+  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement, palette });
+});
+
+PALETTE_SELECT.addEventListener('change', () => {
+  palette = PALETTE_SELECT.value;
+  localStorage.setItem('mw_palette', palette);
+  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement, palette });
 });
 
 // Mute del preview: el panel guarda el estado y el overlay solo obedece.
@@ -460,6 +484,7 @@ async function init() {
     STYLE_SELECT.value = style;
     FONT_SIZE_IN.value = String(fontSize);
     MOVEMENT_SELECT.value = movement;
+    PALETTE_SELECT.value = palette;
     try {
       const cloud = await fetchCheerState(broadcasterId);
       if (cloud && cloud.cheer_threshold !== undefined) {
@@ -489,6 +514,7 @@ async function init() {
     STYLE_SELECT.value = style;
     FONT_SIZE_IN.value = String(fontSize);
     MOVEMENT_SELECT.value = movement;
+    PALETTE_SELECT.value = palette;
     try {
       const cloud = await fetchCheerState(broadcasterId);
       if (cloud && cloud.cheer_threshold !== undefined) {

@@ -100,7 +100,13 @@ export function createBridge(room) {
     },
     sendHello() { send('hello', { at: Date.now() }); },
     sendPing() { send('ping', { at: Date.now() }); },
-    sendSet(amount) { send('set', { amount: Math.max(1, Math.floor(Number(amount) || 100)) }); },
+    sendSet(payload) {
+      if (typeof payload === 'number') {
+        send('set', { amount: Math.max(1, Math.floor(Number(payload) || 100)) });
+      } else {
+        send('set', payload);
+      }
+    },
     sendFlip(flip) { send('flip', { flip: !!flip }); },
     sendTest() { send('test', { at: Date.now() }); },
     sendDisconnect() { send('disconnect', { at: Date.now() }); },

@@ -51,6 +51,32 @@
   #bubble.style-neon::after {
     border-top-color: rgba(0, 255, 255, 0.9);
   }
+  #bubble.style-grape { background: rgba(169, 149, 250, 0.96); color: #101010; }
+  #bubble.style-grape::after { border-top-color: rgba(169, 149, 250, 0.96); }
+  #bubble.style-sapphire { background: rgba(121, 146, 233, 0.96); color: #101010; }
+  #bubble.style-sapphire::after { border-top-color: rgba(121, 146, 233, 0.96); }
+  #bubble.style-ocean { background: rgba(151, 213, 253, 0.96); color: #101010; }
+  #bubble.style-ocean::after { border-top-color: rgba(151, 213, 253, 0.96); }
+  #bubble.style-emerald { background: rgba(146, 245, 186, 0.96); color: #101010; }
+  #bubble.style-emerald::after { border-top-color: rgba(146, 245, 186, 0.96); }
+  #bubble.style-green { background: rgba(150, 244, 68, 0.96); color: #101010; }
+  #bubble.style-green::after { border-top-color: rgba(150, 244, 68, 0.96); }
+  #bubble.style-snow { background: rgba(254, 251, 255, 0.96); color: #101010; }
+  #bubble.style-snow::after { border-top-color: rgba(254, 251, 255, 0.96); }
+  #bubble.style-carbon { background: rgba(105, 104, 106, 0.96); color: #fff; }
+  #bubble.style-carbon::after { border-top-color: rgba(105, 104, 106, 0.96); }
+  #bubble.style-orange { background: rgba(240, 173, 49, 0.96); color: #101010; }
+  #bubble.style-orange::after { border-top-color: rgba(240, 173, 49, 0.96); }
+  #bubble.style-chocolate { background: rgba(195, 125, 93, 0.96); color: #fff; }
+  #bubble.style-chocolate::after { border-top-color: rgba(195, 125, 93, 0.96); }
+  #bubble.style-cherry { background: rgba(237, 145, 215, 0.96); color: #101010; }
+  #bubble.style-cherry::after { border-top-color: rgba(237, 145, 215, 0.96); }
+  #bubble.style-red { background: rgba(228, 50, 54, 0.96); color: #fff; }
+  #bubble.style-red::after { border-top-color: rgba(228, 50, 54, 0.96); }
+  #bubble.style-yellow { background: rgba(246, 206, 50, 0.96); color: #101010; }
+  #bubble.style-yellow::after { border-top-color: rgba(246, 206, 50, 0.96); }
+  #bubble.style-chalk { background: rgba(217, 215, 218, 0.96); color: #101010; }
+  #bubble.style-chalk::after { border-top-color: rgba(217, 215, 218, 0.96); }
   #bubble::after {
     content: ''; position: absolute; bottom: -14px; left: 50%;
     transform: translateX(-50%); border: 14px solid transparent;
@@ -112,6 +138,7 @@ let font = localStorage.getItem('mw_font') || 'Georgia';
 let style = localStorage.getItem('mw_style') || 'default';
 let fontSize = Number(localStorage.getItem('mw_fontSize')) || 22;
 let movement = localStorage.getItem('mw_movement') || 'off';
+let palette = localStorage.getItem('mw_palette') || 'default';
 
 function applyFont() {
   textEl.style.fontFamily = font;
@@ -119,7 +146,8 @@ function applyFont() {
 }
 
 function applyStyle() {
-  bubbleEl.className = 'style-' + style;
+  const cls = palette !== 'default' ? palette : style;
+  bubbleEl.className = 'style-' + cls;
 }
 
 function applyMovement() {
@@ -294,6 +322,7 @@ if (configured() && BROADCASTER_ID) {
     if (p && p.style) { style = p.style; localStorage.setItem('mw_style', style); applyStyle(); }
     if (p && p.fontSize) { fontSize = Number(p.fontSize); localStorage.setItem('mw_fontSize', fontSize); applyFont(); }
     if (p && p.movement) { movement = p.movement; localStorage.setItem('mw_movement', movement); applyMovement(); }
+    if (p && p.palette) { palette = p.palette; localStorage.setItem('mw_palette', palette); applyStyle(); }
   });
   bridge.onFlip((p) => {
     if (p && typeof p.flip === 'boolean') {
