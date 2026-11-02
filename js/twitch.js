@@ -1,0 +1,201 @@
+// Cliente EventSub de Twitch para recibir cheers de forma oficial.
+// Se adapta del patron ya usado en goal-overlay (js/twitch.js).
+import { TWITCH_CLIENT_ID, TWITCH_OAUTH_BASE, SUPABASE_KEY } from './config.js';
+
+const TWITCH_API = 'https://api.twitch.tv/helix';
+const EVENT_SUB_WS = 'wss://eventsub.wss.twitch.tv/ws';
+
+// ---- Token: obtenido del Edge Function (maneja refresh server-side) ----
+export async function getAccessToken(broadcasterId) {
+    const res = await fetch(`${TWITCH_OAUTH_BASE}/token?broadcaster_id=${encodeURIComponent(broadcasterId)}`, {
+        headers: {
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+        },
+    });
+    if (res.status === 401) {
+        throw new Error('token_expired');
+    }
+    if (!res.ok) {
+        throw new Error(`token request failed (${res.status})`);
+    }
+    const data = await res.json();
+    return data.access_token;
+}
+
+// ---- EventSub WebSocket client para canal.cheer ----
+export class EventSubClient {
+    constructor(broadcasterId, onCheer) {
+        this.broadcasterId = broadcasterId;
+        this.onCheer = onCheer;
+        this.ws = null;
+        this.sessionId = null;
+        this.reconnectTimer = null;
+        this.subscribed = false;
+        this.seenMessageIds = new Set();
+        this.accessToken = null;
+    }
+
+    async connect(accessToken) {
+        this.accessToken = accessToken;
+        this.ws = new WebSocket(EVENT_SUB_WS);
+
+        this.ws.onopen = () => {
+            console.log('[eventsub] websocket opened');
+        };
+
+        this.ws.onmessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+                this.handleMessage(msg);
+            } catch (e) {
+                console.warn('[eventsub] failed to parse message', e);
+            }
+        };
+
+        this.ws.onclose = () => {
+            console.log('[eventsub] websocket closed');
+            this.ws = null;
+            this.sessionId = null;
+            this.subscribed = false;
+            this.scheduleReconnect();
+        };
+
+        this.ws.onerror = (e) => {
+            console.warn('[eventsub] websocket error', e);
+        };
+    }
+
+    handleMessage(msg) {
+        const { metadata, payload } = msg;
+        const type = metadata && metadata.message_type;
+
+        switch (type) {
+            case 'session_welcome': {
+                const session = payload && payload.session;
+                if (session && session.id) {
+                    this.sessionId = session.id;
+                    console.log('[eventsub] welcome, session:', session.id);
+                    this.subscribe();
+                }
+                break;
+            }
+            case 'session_keepalive':
+                break;
+            case 'notification': {
+                const sub = payload && payload.subscription;
+                const event = payload && payload.event;
+                const messageId = metadata && metadata.message_id;
+
+                if (messageId && this.seenMessageIds.has(messageId)) {
+                    return;
+                }
+                if (messageId) {
+                    this.seenMessageIds.add(messageId);
+                    if (this.seenMessageIds.size > 1000) {
+                        this.seenMessageIds.clear();
+                    }
+                }
+
+                if (sub && sub.type === 'channel.cheer' && event) {
+                    this.onCheer(event);
+                }
+                break;
+            }
+            case 'session_reconnect': {
+                const reconnectUrl = payload && payload.session && payload.session.reconnect_url;
+                if (reconnectUrl) {
+                    this.reconnect(reconnectUrl);
+                } else {
+                    this.scheduleReconnect();
+                }
+                break;
+            }
+            case 'revocation': {
+                console.warn('[eventsub] subscription revoked');
+                this.subscribed = false;
+                break;
+            }
+        }
+    }
+
+    async subscribe() {
+        if (this.subscribed || !this.sessionId || !this.accessToken) return;
+        try {
+            const res = await fetch(`${TWITCH_API}/eventsub/subscriptions`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${this.accessToken}`,
+                    'Client-Id': TWITCH_CLIENT_ID,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    type: 'channel.cheer',
+                    version: '1',
+                    condition: { broadcaster_user_id: this.broadcasterId },
+                    transport: { method: 'websocket', session_id: this.sessionId },
+                }),
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                console.warn('[eventsub] subscribe failed', res.status, text);
+                return;
+            }
+            const data = await res.json();
+            console.log('[eventsub] subscribed to channel.cheer', data);
+            this.subscribed = true;
+        } catch (e) {
+            console.warn('[eventsub] subscribe error', e);
+        }
+    }
+
+    scheduleReconnect(delayMs = 3000) {
+        if (this.reconnectTimer) return;
+        this.reconnectTimer = setTimeout(async () => {
+            this.reconnectTimer = null;
+            try {
+                const token = await getAccessToken(this.broadcasterId);
+                this.connect(token);
+            } catch (e) {
+                console.warn('[eventsub] reconnect token failed', e);
+                this.scheduleReconnect(Math.min(delayMs * 2, 30000));
+            }
+        }, delayMs);
+    }
+
+    reconnect(url) {
+        if (this.ws) {
+            try { this.ws.close(); } catch (e) {}
+        }
+        this.ws = new WebSocket(url);
+        this.ws.onopen = () => {
+            console.log('[eventsub] reconnected');
+            this.subscribed = false;
+            this.subscribe();
+        };
+        this.ws.onmessage = (event) => {
+            try {
+                this.handleMessage(JSON.parse(event.data));
+            } catch (e) { console.warn('[eventsub] parse error', e); }
+        };
+        this.ws.onclose = () => {
+            this.ws = null;
+            this.scheduleReconnect();
+        };
+        this.ws.onerror = (e) => {
+            console.warn('[eventsub] reconnect ws error', e);
+        };
+    }
+
+    async disconnect() {
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
+        if (this.ws) {
+            try { this.ws.close(); } catch (e) {}
+        }
+        this.ws = null;
+        this.sessionId = null;
+        this.subscribed = false;
+    }
+}

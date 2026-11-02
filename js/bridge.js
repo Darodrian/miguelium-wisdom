@@ -3,11 +3,8 @@ import { cfg } from './config.js';
 
 const SUPA_URL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/+esm';
 
-const CHANNEL_STORE = 'mw_channel';
-const KEY_PFX = 'mw_key_';
 const AMOUNT_PFX = 'mw_amount_';
 const PREVIEW_MUTE_STORE = 'mw_preview_mute';
-const KEY_ALPHABET = '23456789abcdefghjkmnpqrstuvwxyz';
 
 function storageGet(key, def) {
   try { const v = localStorage.getItem(key); return v === null ? def : v; } catch (e) { return def; }
@@ -16,51 +13,18 @@ function storageSet(key, val) {
   try { localStorage.setItem(key, String(val)); } catch (e) { /* modo privado */ }
 }
 
-function hashParam(name) {
-  return String(new URLSearchParams(location.hash.slice(1)).get(name) || '').trim();
+function norm(id) {
+  return String(id || '').trim().toLowerCase();
 }
 
-// Los canales de Twitch son insensibles a mayusculas: normaliza para que
-// 'MiCan' en el panel y 'mican' en la URL compartan clave y monto guardados.
-function norm(channel) {
-  return String(channel || '').trim().toLowerCase();
-}
-
-// ---- canal ----
-function savedChannel() { return norm(storageGet(CHANNEL_STORE, '')); }
-function saveChannel(v) { storageSet(CHANNEL_STORE, norm(v)); }
-// El overlay lee el canal de la URL; el panel lo guarda por instalacion.
-function overlayChannel() { return hashParam('c').toLowerCase(); }
-function overlayKey() { return hashParam('k'); }
-
-// ---- clave por canal ----
-function savedKey(channel) { return storageGet(KEY_PFX + norm(channel), ''); }
-function saveKey(channel, v) { storageSet(KEY_PFX + norm(channel), v); }
-function hasKey(channel) { return savedKey(channel).length > 0; }
-
-function generateKey(len = 24) {
-  const n = KEY_ALPHABET.length;
-  const limit = 256 - (256 % n);
-  const out = [];
-  while (out.length < len) {
-    const bytes = new Uint8Array(len * 2);
-    crypto.getRandomValues(bytes);
-    for (const b of bytes) {
-      if (b < limit) out.push(KEY_ALPHABET[b % n]);
-      if (out.length === len) break;
-    }
-  }
-  return out.join('');
-}
-
-// ---- monto (redencion) por canal ----
-function savedAmount(channel, def) {
-  const raw = storageGet(AMOUNT_PFX + norm(channel), '');
+// ---- monto (umbral de cheers) por broadcaster ----
+function savedAmount(broadcasterId, def) {
+  const raw = storageGet(AMOUNT_PFX + norm(broadcasterId), '');
   const n = Number(raw);
   return raw !== '' && Number.isFinite(n) && n > 0 ? Math.floor(n) : (def || 100);
 }
-function saveAmount(channel, n) {
-  storageSet(AMOUNT_PFX + norm(channel), Math.max(1, Math.floor(Number(n) || 100)));
+function saveAmount(broadcasterId, n) {
+  storageSet(AMOUNT_PFX + norm(broadcasterId), Math.max(1, Math.floor(Number(n) || 100)));
 }
 
 // ---- mute del preview (estado solo del panel) ----
@@ -71,10 +35,10 @@ function configured() {
   return !!(cfg.supabaseUrl && cfg.supabaseKey);
 }
 
-// URL absoluta del overlay con el canal y la clave en el hash.
-function overlayUrl(channel, key) {
+// URL absoluta del overlay con el broadcaster_id en el query string.
+function overlayUrl(broadcasterId) {
   const base = new URL('index.html', location.href);
-  base.hash = 'c=' + encodeURIComponent(norm(channel)) + '&k=' + encodeURIComponent(key);
+  base.search = 'broadcaster_id=' + encodeURIComponent(broadcasterId);
   return base.href;
 }
 
@@ -149,8 +113,6 @@ export function createBridge(room) {
 
 export {
   cfg, configured,
-  savedChannel, saveChannel, overlayChannel, overlayKey,
-  savedKey, saveKey, hasKey, generateKey,
   savedAmount, saveAmount, overlayUrl,
   savedPreviewMute, savePreviewMute,
 };

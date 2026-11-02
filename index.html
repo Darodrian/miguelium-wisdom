@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Miguelium Wisdom</title>
 <link rel="icon" href="data:,">
-<script src="https://cdn.jsdelivr.net/npm/comfy.js@1.1.29/dist/comfy.min.js"></script>
 <style>
   html, body { margin: 0; background: transparent; overflow: hidden; }
   #stage {
@@ -52,14 +51,16 @@
 
 <script type="module">
 import {
-  cfg, configured, overlayChannel, overlayKey,
-  savedAmount, saveAmount, createBridge,
+  cfg, configured, savedAmount, saveAmount, createBridge,
 } from './js/bridge.js';
+import { getAccessToken, EventSubClient } from './js/twitch.js';
+import { fetchCheerState } from './js/cloud.js';
 import { speak, loadEngine, unlockAudio, setMuted } from './js/tts.js';
 import { forSpeech, schedulePacing } from './js/speech.js';
 
-const CHANNEL = overlayChannel();
-const KEY = overlayKey();
+const BROADCASTER_ID = (() => {
+  try { return new URLSearchParams(location.search).get('broadcaster_id') || ''; } catch { return ''; }
+})();
 const $ = (id) => document.getElementById(id);
 
 const TYPE_MS = cfg.typeMs ?? 35;
@@ -68,20 +69,31 @@ const FADE_MS = cfg.fadeMs ?? 400;
 // Si el motor de voz no contesta en este tiempo, el globo escribe igual sin sonido.
 const VOICE_GRACE_MS = 2500;
 
-const FALLBACK_PHRASES = [
-  'A quien madruga, Dios le ayuda.',
-  'Mas vale tarde que nunca.',
-  'No hay mal que por bien no venga.',
-];
-
 const actor = $('actor');
 const textEl = $('text');
 const migEl = $('img-mig');
 
-let amount = savedAmount(CHANNEL, cfg.amountDefault ?? 100);
+let amount = savedAmount(BROADCASTER_ID, cfg.amountDefault ?? 100);
+
+async function loadCheerThreshold() {
+  if (!BROADCASTER_ID) return;
+  try {
+    const cloud = await fetchCheerState(BROADCASTER_ID);
+    if (cloud && Number.isFinite(cloud.cheer_threshold) && cloud.cheer_threshold > 0) {
+      amount = Math.floor(cloud.cheer_threshold);
+      saveAmount(BROADCASTER_ID, amount);
+    }
+  } catch (e) {
+    console.warn('[overlay] cloud cheer state unavailable, using localStorage', (e && e.message) || e);
+  }
+}
+
+loadCheerThreshold();
 let flip = false;
-let phrases = FALLBACK_PHRASES.slice();
-let lastIndex = -1;
+let phrases = [];
+// Historial de índices de frases recientes para evitar repeticiones cercanas.
+const HISTORY_SIZE = 10;
+let recentIndices = [];
 let showing = false;
 let hideTimer = null;
 let typeTimer = null;
@@ -99,15 +111,23 @@ async function loadPhrases() {
       }
     }
   } catch (e) { /* sin lista */ }
-  if (!phrases.length) phrases = FALLBACK_PHRASES.slice();
 }
 
 function pickPhrase() {
   if (!phrases.length) return '...';
   if (phrases.length === 1) return phrases[0];
-  let i = Math.floor(Math.random() * phrases.length);
-  if (i === lastIndex) i = (i + 1) % phrases.length;
-  lastIndex = i;
+
+  // Intenta hasta phrases.length veces encontrar un índice no reciente.
+  let i;
+  for (let attempt = 0; attempt < phrases.length; attempt++) {
+    i = Math.floor(Math.random() * phrases.length);
+    if (!recentIndices.includes(i)) break;
+  }
+
+  recentIndices.push(i);
+  if (recentIndices.length > HISTORY_SIZE) {
+    recentIndices.shift();
+  }
   return phrases[i];
 }
 
@@ -172,29 +192,33 @@ function show(job) {
   });
 }
 
-// Un cheer que coincide exactamente con el monto activo dispara la reaccion.
-if (window.ComfyJS) {
-  ComfyJS.onCheer = (user, message, bits) => {
-    if (bits === amount) enqueue();
-  };
-  ComfyJS.onConnected = () => { document.title = 'Miguelium Wisdom · ' + CHANNEL; };
-  ComfyJS.onError = () => { /* el overlay sigue en pie aun sin chat */ };
-  if (CHANNEL) {
-    ComfyJS.Init(CHANNEL);
-  } else {
-    console.warn('Miguelium: falta el canal en la URL (#c=...)');
+// Cheers oficiales via Twitch EventSub (reemplaza ComfyJS).
+let eventSub = null;
+
+async function startEventSub() {
+  if (!BROADCASTER_ID) return;
+  try {
+    const token = await getAccessToken(BROADCASTER_ID);
+    eventSub = new EventSubClient(BROADCASTER_ID, (event) => {
+      const bits = Number(event && event.bits);
+      if (Number.isFinite(bits) && bits === amount) {
+        enqueue();
+      }
+    });
+    eventSub.connect(token);
+  } catch (e) {
+    console.warn('[eventsub] start failed', (e && e.message) || e);
+    // El overlay sigue en pie sin reacciones a cheers oficiales.
   }
-} else {
-  console.error('Miguelium: no se pudo cargar ComfyJS (sin reacciones a cheers)');
 }
 
-if (configured() && KEY) {
-  const bridge = createBridge(KEY);
+if (configured() && BROADCASTER_ID) {
+  const bridge = createBridge(BROADCASTER_ID);
   bridge.onSet((p) => {
     const n = Number(p && p.amount);
     if (Number.isFinite(n) && n > 0) {
       amount = Math.floor(n);
-      saveAmount(CHANNEL, amount);
+      saveAmount(BROADCASTER_ID, amount);
     }
   });
   bridge.onFlip((p) => {
@@ -214,8 +238,10 @@ if (configured() && KEY) {
   bridge.connect().catch((e) => {
     console.error('Miguelium: sala', (e && e.message) || e);
   });
+
+  startEventSub();
 } else {
-  console.warn('Miguelium: sin clave (#k=...) — solo reacciones sin sincronizacion');
+  console.warn('Miguelium: sin broadcaster_id — solo reacciones sin sincronizacion');
 }
 
 // Boton Test del panel: dispara el overlay en la misma pagina.

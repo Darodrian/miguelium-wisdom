@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Miguelium Wisdom · Control</title>
 <link rel="icon" href="data:,">
-<script src="https://cdn.jsdelivr.net/npm/comfy.js@1.1.29/dist/comfy.min.js"></script>
 <style>
   :root {
     --panel: rgba(16, 24, 39, 0.72);
@@ -83,22 +82,22 @@
       <div class="msg" id="msg" hidden></div>
     </div>
 
-    <div class="panel">
+    <div id="connection-panel" class="panel">
+      <h2 id="connection-title">Conectar Twitch</h2>
+      <button type="button" id="btn-connect">Conectar cuenta de Twitch</button>
+      <div id="connection-connected" hidden>
+        <span id="connection-status">Conectado</span>
+        <button type="button" id="btn-copy-url" disabled>Copiar URL de OBS</button>
+      </div>
+    </div>
+    <div id="settings-section" hidden class="panel">
       <h2>Configuración</h2>
-      <label class="field">Canal de Twitch
-        <input id="channel" spellcheck="false">
-      </label>
       <label class="field">Bits
         <div class="row">
           <input id="amount" type="number" min="1" step="1" style="flex:1" value="100">
           <button id="btn-save" type="button">Guardar</button>
         </div>
       </label>
-      <div class="keybar">
-        <span>Clave: <em class="none" id="keynone">sin generar</em><code id="keyval" hidden></code></span>
-        <button type="button" id="btn-copy" disabled>Copiar URL de OBS</button>
-        <button type="button" id="btn-key">Generar clave</button>
-      </div>
     </div>
 
     <div class="panel">
@@ -126,33 +125,34 @@
 
 <script type="module">
 import {
-  cfg, configured, savedChannel, saveChannel,
-  savedKey, saveKey, hasKey, generateKey,
-  savedAmount, saveAmount, overlayUrl, createBridge,
+  cfg, configured, savedAmount, saveAmount, createBridge,
   savedPreviewMute, savePreviewMute,
 } from './js/bridge.js';
+import { TWITCH_OAUTH_BASE } from './js/config.js';
+import { fetchCheerState, saveCheerState } from './js/cloud.js';
 
 const $ = (id) => document.getElementById(id);
-const CHANNEL_IN = $('channel'), AMOUNT_IN = $('amount');
+const AMOUNT_IN = $('amount');
 const DOT_OV = $('dot-ov'), STATUS_OV = $('status-ov');
-const KEY_VAL = $('keyval'), KEY_NONE = $('keynone');
-const BTN_KEY = $('btn-key'), BTN_COPY = $('btn-copy'), BTN_SAVE = $('btn-save');
+const BTN_CONNECT = $('btn-connect'), BTN_COPY_URL = $('btn-copy-url'), BTN_SAVE = $('btn-save');
 const BTN_FLIP = $('btn-flip'), BTN_TEST = $('btn-test'), TEST_OVERLAY = $('test-overlay');
 const MUTE_PREVIEW = $('mute-preview');
 const PREVIEW = $('preview'), PREVIEW_NOTE = $('preview-note'), EVENTS = $('events'), MSG = $('msg');
+const CONNECTION_PANEL = $('connection-panel'), CONNECTION_CONNECTED = $('connection-connected');
+const CONNECTION_TITLE = $('connection-title'), CONNECTION_STATUS = $('connection-status');
+const SETTINGS_SECTION = $('settings-section');
 
 const DEFAULT_AMOUNT = cfg.amountDefault ?? 100;
 const OVERLAY_TTL = 90000;
 
-let channel = savedChannel();
-let key = '';
+let broadcasterId = '';
+let broadcasterLogin = '';
 let flip = false;
 let lastHello = 0;
 let roomActive = false;
 let roomBridge = null;
 let roomGen = 0;
 let flashTimer = null;
-let comfyOn = false;
 
 function setOverlay(kind, text) { DOT_OV.className = 'dot' + (kind ? ' ' + kind : ''); STATUS_OV.textContent = text; }
 
@@ -166,28 +166,38 @@ function flash(text) {
   }, 5000);
 }
 
-function showKey() {
-  const has = !!key;
-  KEY_VAL.textContent = key;
-  KEY_VAL.hidden = !has;
-  KEY_NONE.hidden = has;
-  BTN_COPY.disabled = !has || !channel;
-  BTN_KEY.textContent = has ? 'Cambiar clave' : 'Generar clave';
+function showConnected(connected) {
+  if (CONNECTION_PANEL) CONNECTION_PANEL.hidden = false;
+  if (CONNECTION_TITLE) CONNECTION_TITLE.textContent = connected ? 'Conectado' : 'Conectar Twitch';
+  if (BTN_CONNECT) BTN_CONNECT.hidden = connected;
+  if (CONNECTION_CONNECTED) CONNECTION_CONNECTED.hidden = !connected;
+  if (BTN_COPY_URL) BTN_COPY_URL.disabled = !connected;
+  if (CONNECTION_STATUS) {
+    CONNECTION_STATUS.textContent = connected ? ('Conectado: ' + broadcasterLogin) : '';
+  }
+  if (SETTINGS_SECTION) SETTINGS_SECTION.hidden = !connected;
+  setOverlay(connected ? 'live' : '', connected ? ('Canal: ' + broadcasterLogin) : 'Sin canal');
+}
+
+function buildOverlayUrl(broadcasterId) {
+  const base = new URL('index.html', location.href);
+  base.search = 'broadcaster_id=' + encodeURIComponent(broadcasterId);
+  return base.href;
 }
 
 function updatePreview() {
-  if (channel && key) {
-    PREVIEW.src = overlayUrl(channel, key);
+  if (broadcasterId) {
+    PREVIEW.src = buildOverlayUrl(broadcasterId);
     PREVIEW.hidden = false;
     PREVIEW_NOTE.textContent = 'Preview en vivo: lo que veas aqui es lo que se pone en OBS.';
   } else {
     PREVIEW.hidden = true;
-    PREVIEW_NOTE.textContent = 'Genera una clave para ver aqui el mismo overlay que se pone en OBS.';
+    PREVIEW_NOTE.textContent = 'Conecta tu cuenta de Twitch para ver el overlay en el preview.';
   }
 }
 
 function logEvent(user, bits) {
-  const active = savedAmount(channel, DEFAULT_AMOUNT);
+  const active = savedAmount(broadcasterId, DEFAULT_AMOUNT);
   const ok = bits === active;
   if (EVENTS.querySelector('.empty')) EVENTS.textContent = '';
   const li = document.createElement('li');
@@ -212,87 +222,66 @@ async function copyText(text) {
   }
 }
 
-function startComfy() {
-  if (!channel || !window.ComfyJS) return;
-  if (comfyOn && ComfyJS.Disconnect) ComfyJS.Disconnect();
-  comfyOn = false;
-  ComfyJS.onCheer = (user, message, bits) => logEvent(user, bits);
-  ComfyJS.Init(channel);
-  comfyOn = true;
-}
-
 async function startRoom() {
   const gen = ++roomGen;
   if (roomBridge) { await roomBridge.leave(); roomBridge = null; }
   roomActive = false;
   lastHello = 0;
   if (gen !== roomGen) return;
-  if (!configured() || !channel || !key) { setOverlay('', 'Sin sala'); return; }
+  if (!configured() || !broadcasterId) { setOverlay('', 'Sin canal'); return; }
   setOverlay('busy', 'Conectando...');
   try {
-    roomBridge = createBridge(key);
+    roomBridge = createBridge(broadcasterId);
     roomBridge.onStatus((s) => {
-      if (s === 'CHANNEL_ERROR') setOverlay('err', 'Clave rechazada');
+      if (s === 'CHANNEL_ERROR') setOverlay('err', 'Error de conexion');
       else if (s === 'TIMED_OUT') setOverlay('err', 'Sin respuesta');
       else if (s === 'CLOSED') setOverlay('', 'Sala cerrada');
     });
     roomBridge.onHello(() => {
       lastHello = Date.now();
       setOverlay('live', 'Overlay conectado');
-      // Confirma el monto guardado por si el overlay se abrio recien.
-      roomBridge.sendSet(savedAmount(channel, DEFAULT_AMOUNT));
+      roomBridge.sendSet(savedAmount(broadcasterId, DEFAULT_AMOUNT));
     });
     await roomBridge.connect();
     if (gen !== roomGen) return;
     roomActive = true;
     lastHello = Date.now();
     roomBridge.sendPing();
-    roomBridge.sendSet(savedAmount(channel, DEFAULT_AMOUNT));
+    roomBridge.sendSet(savedAmount(broadcasterId, DEFAULT_AMOUNT));
   } catch (e) {
     if (gen !== roomGen) return;
     const m = (e && e.message) || '';
-    setOverlay('err', m === 'CHANNEL_ERROR' ? 'Clave rechazada' : m === 'TIMED_OUT' ? 'Sin respuesta' : 'No se pudo conectar la sala');
+    setOverlay('err', m === 'CHANNEL_ERROR' ? 'Error de conexion' : m === 'TIMED_OUT' ? 'Sin respuesta' : 'No se pudo conectar la sala');
   }
 }
 
-CHANNEL_IN.addEventListener('change', () => {
-  saveChannel(CHANNEL_IN.value);
-  channel = savedChannel();
-  key = savedKey(channel);
-  AMOUNT_IN.value = String(savedAmount(channel, DEFAULT_AMOUNT));
-  showKey();
-  startComfy();
-  startRoom();
-  updatePreview();
-});
+// ---- OAuth connect ----
+if (BTN_CONNECT) {
+  BTN_CONNECT.addEventListener('click', () => {
+    const authUrl = `${TWITCH_OAUTH_BASE}/authorize`;
+    location.href = authUrl;
+  });
+}
 
-BTN_SAVE.addEventListener('click', () => {
-  if (!channel) { flash('Escribe tu canal primero'); return; }
+BTN_SAVE.addEventListener('click', async () => {
+  if (!broadcasterId) { flash('Conecta tu cuenta de Twitch primero'); return; }
   const v = Math.max(1, Math.floor(Number(AMOUNT_IN.value) || DEFAULT_AMOUNT));
   AMOUNT_IN.value = String(v);
-  saveAmount(channel, v);
+  saveAmount(broadcasterId, v);
   if (roomBridge) roomBridge.sendSet(v);
+  try {
+    await saveCheerState(broadcasterId, v);
+  } catch (e) {
+    console.warn('[dashboard] cloud cheer state save failed', e?.message ?? e);
+    flash('Monto guardado localmente; la nube fallo', 'err');
+    return;
+  }
   flash('Monto guardado: ' + v + ' bits');
 });
 
-BTN_KEY.addEventListener('click', async () => {
-  if (!channel) { flash('Escribe tu canal primero'); return; }
-  const had = hasKey(channel);
-  const msg = had
-    ? 'Se generara una clave nueva.\n\nEl overlay dejara de sincronizarse hasta que pegues la nueva URL en OBS (Fuente Browser > URL). Tendras que copiarla de nuevo.'
-    : 'Se generara una clave para tu overlay.\n\nDespues copiala con "Copiar URL de OBS" y pegala en la fuente Browser de OBS.';
-  if (!confirm(msg)) return;
-  key = generateKey();
-  saveKey(channel, key);
-  showKey();
-  await startRoom();
-  updatePreview();
-  await copyText(overlayUrl(channel, key));
-  flash(had ? 'Clave nueva generada y URL copiada. Actualiza OBS.' : 'Clave generada y URL copiada. Pegala en OBS.');
-});
-
-BTN_COPY.addEventListener('click', async () => {
-  await copyText(overlayUrl(channel, key));
+BTN_COPY_URL.addEventListener('click', async () => {
+  if (!broadcasterId) { flash('Conecta tu cuenta de Twitch primero'); return; }
+  await copyText(buildOverlayUrl(broadcasterId));
   flash('URL de OBS copiada');
 });
 
@@ -330,18 +319,75 @@ setInterval(() => {
   if (roomActive && Date.now() - lastHello > OVERLAY_TTL) setOverlay('', 'Overlay sin conexion');
 }, 5000);
 
-// Inicio: recupera la configuracion guardada de este canal.
-if (channel) {
-  CHANNEL_IN.value = channel;
-  key = savedKey(channel);
-  AMOUNT_IN.value = String(savedAmount(channel, DEFAULT_AMOUNT));
-  showKey();
-  startComfy();
-  startRoom();
+// ---- Inicio: manejar callback de OAuth o restaurar sesion ----
+async function init() {
+  const urlParams = new URLSearchParams(location.search);
+  const connected = urlParams.get('connected');
+  const broadcasterIdFromUrl = urlParams.get('broadcaster_id');
+  const error = urlParams.get('error');
+
+  if (error) {
+    flash('Conexion Twitch fallo: ' + error, 'err');
+    window.history.replaceState({}, document.title, location.pathname);
+  }
+
+  if (connected && broadcasterIdFromUrl) {
+    broadcasterLogin = connected;
+    broadcasterId = broadcasterIdFromUrl;
+    localStorage.setItem('mw_broadcaster_id', broadcasterId);
+    localStorage.setItem('mw_broadcaster_login', broadcasterLogin);
+    showConnected(true);
+    try {
+      const cloud = await fetchCheerState(broadcasterId);
+      if (cloud && cloud.cheer_threshold !== undefined) {
+        AMOUNT_IN.value = String(cloud.cheer_threshold);
+        saveAmount(broadcasterId, cloud.cheer_threshold);
+      } else {
+        AMOUNT_IN.value = String(savedAmount(broadcasterId, DEFAULT_AMOUNT));
+      }
+    } catch (e) {
+      console.warn('[dashboard] cloud cheer state unavailable', e?.message ?? e);
+      AMOUNT_IN.value = String(savedAmount(broadcasterId, DEFAULT_AMOUNT));
+    }
+    startRoom();
+    updatePreview();
+    window.history.replaceState({}, document.title, location.pathname);
+    return;
+  }
+
+  // Restaurar sesion desde localStorage
+  const savedId = localStorage.getItem('mw_broadcaster_id');
+  const savedLogin = localStorage.getItem('mw_broadcaster_login');
+  if (savedId) {
+    broadcasterId = savedId;
+    broadcasterLogin = savedLogin || '';
+    showConnected(true);
+    try {
+      const cloud = await fetchCheerState(broadcasterId);
+      if (cloud && cloud.cheer_threshold !== undefined) {
+        AMOUNT_IN.value = String(cloud.cheer_threshold);
+        saveAmount(broadcasterId, cloud.cheer_threshold);
+      } else {
+        AMOUNT_IN.value = String(savedAmount(broadcasterId, DEFAULT_AMOUNT));
+      }
+    } catch (e) {
+      console.warn('[dashboard] cloud cheer state unavailable', e?.message ?? e);
+      AMOUNT_IN.value = String(savedAmount(broadcasterId, DEFAULT_AMOUNT));
+    }
+  }
+
+  if (broadcasterId) {
+    startRoom();
+  }
   updatePreview();
-} else {
-  showKey();
 }
+
+init();
+
+window.addEventListener('beforeunload', () => {
+  if (broadcasterId) localStorage.setItem('mw_broadcaster_id', broadcasterId);
+  if (broadcasterLogin) localStorage.setItem('mw_broadcaster_login', broadcasterLogin);
+});
 </script>
 </body>
 </html>
