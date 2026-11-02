@@ -103,6 +103,16 @@
         <button type="button" id="btn-copy-url" disabled style="margin-top:8px;">Copiar URL de OBS</button>
       </div>
     </div>
+    <div class="panel">
+      <h2>Vista</h2>
+      <div class="seg">
+        <button id="btn-flip" type="button" aria-pressed="false">Voltear horizontal</button>
+      </div>
+      <button type="button" id="btn-test">Probar animacion</button>
+      <label class="row"><input id="test-overlay" type="checkbox" checked> Mostrar tambien en el overlay de OBS</label>
+      <label class="row"><input id="mute-preview" type="checkbox"> Silenciar voz del preview</label>
+    </div>
+
     <div id="settings-section" hidden class="panel">
       <h2>Configuración</h2>
       <label class="field">Bits
@@ -156,16 +166,6 @@
           <option value="chalk">Chalk</option>
         </select>
       </label>
-    </div>
-
-    <div class="panel">
-      <h2>Vista</h2>
-      <div class="seg">
-        <button id="btn-flip" type="button" aria-pressed="false">Voltear horizontal</button>
-      </div>
-      <button type="button" id="btn-test">Probar animacion</button>
-      <label class="row"><input id="test-overlay" type="checkbox" checked> Mostrar tambien en el overlay de OBS</label>
-      <label class="row"><input id="mute-preview" type="checkbox"> Silenciar voz del preview</label>
     </div>
   </div>
 

@@ -147,11 +147,13 @@ function applyFont() {
 
 function applyStyle() {
   const cls = palette !== 'default' ? palette : style;
-  bubbleEl.className = 'style-' + cls;
+  bubbleEl.classList.remove('style-default', 'style-dark', 'style-neon', 'style-grape', 'style-sapphire', 'style-ocean', 'style-emerald', 'style-green', 'style-snow', 'style-carbon', 'style-orange', 'style-chocolate', 'style-cherry', 'style-red', 'style-yellow', 'style-chalk');
+  bubbleEl.classList.add('style-' + cls);
 }
 
 function applyMovement() {
-  actor.className = 'movement-' + movement;
+  actor.classList.remove('movement-off', 'movement-swing', 'movement-bob');
+  actor.classList.add('movement-' + movement);
 }
 
 async function loadCheerThreshold() {
