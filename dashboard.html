@@ -298,6 +298,19 @@ BTN_COPY_URL.addEventListener('click', async () => {
 if (BTN_LOGOUT) {
   BTN_LOGOUT.addEventListener('click', async () => {
     if (!broadcasterId) return;
+    // Notificar al overlay que se desconectó (si hay sala activa).
+    try {
+      if (roomBridge && roomActive) {
+        roomBridge.sendDisconnect();
+      } else if (configured()) {
+        const tmp = createBridge(broadcasterId);
+        await tmp.connect();
+        tmp.sendDisconnect();
+        await tmp.leave();
+      }
+    } catch (e) {
+      console.warn('[dashboard] send disconnect failed', e?.message ?? e);
+    }
     try {
       await fetch(`${TWITCH_OAUTH_BASE}/revoke?broadcaster_id=${encodeURIComponent(broadcasterId)}`, {
         method: 'POST',

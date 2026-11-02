@@ -227,6 +227,17 @@ if (configured() && BROADCASTER_ID) {
       applyFlip();
     }
   });
+  bridge.onDisconnect(() => {
+    // El panel desconectó: ocultar el actor y detener la cola.
+    stopFx();
+    actor.classList.remove('on');
+    actor.classList.add('out');
+    setTimeout(() => {
+      actor.classList.remove('on', 'out');
+      showing = false;
+    }, FADE_MS);
+    document.title = 'Miguelium Wisdom · Desconectado';
+  });
   bridge.onTest(() => enqueue());
   bridge.onPing(() => bridge.sendHello());
   bridge.onStatus((s) => {
