@@ -6,6 +6,16 @@
 <title>Miguelium Wisdom</title>
 <link rel="icon" href="data:,">
 <style>
+  @font-face {
+    font-family: 'ComingSoon';
+    src: url('./fonts/ComingSoon-Regular.woff2') format('woff2');
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'ZPix';
+    src: url('./fonts/zpix.woff2') format('woff2');
+    font-display: swap;
+  }
   html, body { margin: 0; background: transparent; overflow: hidden; }
   #stage {
     position: fixed; inset: 0;
@@ -28,6 +38,19 @@
     font-family: Georgia, 'Times New Roman', serif;
     font-size: 22px; line-height: 1.35; text-align: center;
   }
+  #bubble.style-dark {
+    background: rgba(16, 24, 39, 0.96); color: #e8ecf4;
+  }
+  #bubble.style-dark::after {
+    border-top-color: rgba(16, 24, 39, 0.96);
+  }
+  #bubble.style-neon {
+    background: rgba(0, 255, 255, 0.9); color: #101010;
+    font-weight: 700;
+  }
+  #bubble.style-neon::after {
+    border-top-color: rgba(0, 255, 255, 0.9);
+  }
   #bubble::after {
     content: ''; position: absolute; bottom: -14px; left: 50%;
     transform: translateX(-50%); border: 14px solid transparent;
@@ -38,6 +61,16 @@
     filter: drop-shadow(0 12px 22px rgba(0,0,0,.45));
     transition: transform .25s ease;
   }
+  @keyframes swing {
+    0%, 100% { transform: rotate(-2deg); }
+    50% { transform: rotate(2deg); }
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-4px) scale(1.02); }
+  }
+  .movement-swing #img-mig { animation: swing 0.4s ease-in-out infinite; }
+  .movement-bob #img-mig { animation: bob 0.4s ease-in-out infinite; }
   #img-mig.flip { transform: scaleX(-1); }
 </style>
 </head>
@@ -71,9 +104,27 @@ const VOICE_GRACE_MS = 2500;
 
 const actor = $('actor');
 const textEl = $('text');
+const bubbleEl = $('bubble');
 const migEl = $('img-mig');
 
 let amount = savedAmount(BROADCASTER_ID, cfg.amountDefault ?? 100);
+let font = localStorage.getItem('mw_font') || 'Georgia';
+let style = localStorage.getItem('mw_style') || 'default';
+let fontSize = Number(localStorage.getItem('mw_fontSize')) || 22;
+let movement = localStorage.getItem('mw_movement') || 'off';
+
+function applyFont() {
+  textEl.style.fontFamily = font;
+  textEl.style.fontSize = fontSize + 'px';
+}
+
+function applyStyle() {
+  bubbleEl.className = 'style-' + style;
+}
+
+function applyMovement() {
+  actor.className = 'movement-' + movement;
+}
 
 async function loadCheerThreshold() {
   if (!BROADCASTER_ID) return;
@@ -89,6 +140,9 @@ async function loadCheerThreshold() {
 }
 
 loadCheerThreshold();
+applyFont();
+applyStyle();
+applyMovement();
 let flip = false;
 let phrases = [];
 // Historial de índices de frases recientes para evitar repeticiones cercanas.
@@ -236,6 +290,10 @@ if (configured() && BROADCASTER_ID) {
       amount = Math.floor(n);
       saveAmount(BROADCASTER_ID, amount);
     }
+    if (p && p.font) { font = p.font; localStorage.setItem('mw_font', font); applyFont(); }
+    if (p && p.style) { style = p.style; localStorage.setItem('mw_style', style); applyStyle(); }
+    if (p && p.fontSize) { fontSize = Number(p.fontSize); localStorage.setItem('mw_fontSize', fontSize); applyFont(); }
+    if (p && p.movement) { movement = p.movement; localStorage.setItem('mw_movement', movement); applyMovement(); }
   });
   bridge.onFlip((p) => {
     if (p && typeof p.flip === 'boolean') {

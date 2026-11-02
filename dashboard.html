@@ -6,6 +6,16 @@
 <title>Miguelium Wisdom · Control</title>
 <link rel="icon" href="data:,">
 <style>
+  @font-face {
+    font-family: 'ComingSoon';
+    src: url('./fonts/ComingSoon-Regular.woff2') format('woff2');
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'ZPix';
+    src: url('./fonts/zpix.woff2') format('woff2');
+    font-display: swap;
+  }
   :root {
     --panel: rgba(16, 24, 39, 0.72);
     --line: rgba(255, 255, 255, 0.08);
@@ -104,6 +114,30 @@
       <p class="note" style="font-size: 12px; color: var(--muted); margin-top: 8px;">
         Los cheers oficiales requieren que el canal sea <strong>Afiliado o Partner de Twitch</strong>. Si no lo es, las reacciones a cheers no funcionarán.
       </p>
+      <label class="field">Fuente
+        <select id="font-select">
+          <option value="Georgia">Georgia (por defecto)</option>
+          <option value="ComingSoon">Coming Soon</option>
+          <option value="ZPix">ZPix</option>
+        </select>
+      </label>
+      <label class="field">Estilo del globo
+        <select id="style-select">
+          <option value="default">Por defecto</option>
+          <option value="dark">Oscuro</option>
+          <option value="neon">Neón</option>
+        </select>
+      </label>
+      <label class="field">Tamaño de fuente (px)
+        <input id="font-size" type="number" min="12" max="72" step="2" value="22">
+      </label>
+      <label class="field">Movimiento al hablar
+        <select id="movement-select">
+          <option value="off">Sin movimiento</option>
+          <option value="swing">Balanceo</option>
+          <option value="bob">Subir y bajar</option>
+        </select>
+      </label>
     </div>
 
     <div class="panel">
@@ -144,6 +178,7 @@ const BTN_CONNECT = $('btn-connect'), BTN_COPY_URL = $('btn-copy-url'), BTN_SAVE
 const BTN_LOGOUT = $('btn-logout');
 const BTN_FLIP = $('btn-flip'), BTN_TEST = $('btn-test'), TEST_OVERLAY = $('test-overlay');
 const MUTE_PREVIEW = $('mute-preview');
+const FONT_SELECT = $('font-select'), STYLE_SELECT = $('style-select'), FONT_SIZE_IN = $('font-size'), MOVEMENT_SELECT = $('movement-select');
 const PREVIEW = $('preview'), PREVIEW_NOTE = $('preview-note'), EVENTS = $('events'), MSG = $('msg');
 const CONNECTION_PANEL = $('connection-panel'), CONNECTION_CONNECTED = $('connection-connected');
 const CONNECTION_TITLE = $('connection-title'), CONNECTION_STATUS = $('connection-status');
@@ -155,6 +190,10 @@ const OVERLAY_TTL = 90000;
 let broadcasterId = '';
 let broadcasterLogin = '';
 let flip = false;
+let font = localStorage.getItem('mw_font') || 'Georgia';
+let style = localStorage.getItem('mw_style') || 'default';
+let fontSize = Number(localStorage.getItem('mw_fontSize')) || 22;
+let movement = localStorage.getItem('mw_movement') || 'off';
 let lastHello = 0;
 let roomActive = false;
 let roomBridge = null;
@@ -247,7 +286,7 @@ async function startRoom() {
     roomBridge.onHello(() => {
       lastHello = Date.now();
       setOverlay('live', 'Overlay conectado');
-      roomBridge.sendSet(savedAmount(broadcasterId, DEFAULT_AMOUNT));
+      roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement });
     });
     await roomBridge.connect();
     if (gen !== roomGen) return;
@@ -280,7 +319,7 @@ BTN_SAVE.addEventListener('click', async () => {
   const v = Math.max(1, Math.floor(Number(AMOUNT_IN.value) || DEFAULT_AMOUNT));
   AMOUNT_IN.value = String(v);
   saveAmount(broadcasterId, v);
-  if (roomBridge) roomBridge.sendSet(v);
+  if (roomBridge) roomBridge.sendSet({ amount: v, font, style, fontSize, movement });
   try {
     await saveCheerState(broadcasterId, v);
   } catch (e) {
@@ -358,6 +397,29 @@ BTN_TEST.addEventListener('click', () => {
   if (win) win.postMessage({ type: 'test' }, '*');
 });
 
+// Live style/font updates to overlay via bridge
+FONT_SELECT.addEventListener('change', () => {
+  font = FONT_SELECT.value;
+  localStorage.setItem('mw_font', font);
+  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize });
+});
+STYLE_SELECT.addEventListener('change', () => {
+  style = STYLE_SELECT.value;
+  localStorage.setItem('mw_style', style);
+  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize });
+});
+FONT_SIZE_IN.addEventListener('input', () => {
+  fontSize = Number(FONT_SIZE_IN.value) || 22;
+  localStorage.setItem('mw_fontSize', fontSize);
+  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement });
+});
+
+MOVEMENT_SELECT.addEventListener('change', () => {
+  movement = MOVEMENT_SELECT.value;
+  localStorage.setItem('mw_movement', movement);
+  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement });
+});
+
 // Mute del preview: el panel guarda el estado y el overlay solo obedece.
 // Se reenvia al cargar el iframe para que un reload no pierda el mudo.
 function sendMute() {
@@ -394,6 +456,10 @@ async function init() {
     localStorage.setItem('mw_broadcaster_id', broadcasterId);
     localStorage.setItem('mw_broadcaster_login', broadcasterLogin);
     showConnected(true);
+    FONT_SELECT.value = font;
+    STYLE_SELECT.value = style;
+    FONT_SIZE_IN.value = String(fontSize);
+    MOVEMENT_SELECT.value = movement;
     try {
       const cloud = await fetchCheerState(broadcasterId);
       if (cloud && cloud.cheer_threshold !== undefined) {
@@ -419,6 +485,10 @@ async function init() {
     broadcasterId = savedId;
     broadcasterLogin = savedLogin || '';
     showConnected(true);
+    FONT_SELECT.value = font;
+    STYLE_SELECT.value = style;
+    FONT_SIZE_IN.value = String(fontSize);
+    MOVEMENT_SELECT.value = movement;
     try {
       const cloud = await fetchCheerState(broadcasterId);
       if (cloud && cloud.cheer_threshold !== undefined) {
