@@ -311,6 +311,11 @@ if (BTN_LOGOUT) {
     } catch (e) {
       console.warn('[dashboard] send disconnect failed', e?.message ?? e);
     }
+    // Cerrar puente de tiempo real y marcar como inactivo para que el botón Test deje de funcionar.
+    try {
+      if (roomBridge) { await roomBridge.leave(); roomBridge = null; }
+    } catch (e) { console.warn('[dashboard] leave bridge failed', e?.message ?? e); }
+    roomActive = false;
     try {
       await fetch(`${TWITCH_OAUTH_BASE}/revoke?broadcaster_id=${encodeURIComponent(broadcasterId)}`, {
         method: 'POST',

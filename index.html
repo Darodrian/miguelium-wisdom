@@ -229,6 +229,11 @@ if (configured() && BROADCASTER_ID) {
   });
   bridge.onDisconnect(() => {
     // El panel desconectó: ocultar el actor y detener la cola.
+    // Desconectar EventSub para dejar de recibir cheers oficiales.
+    if (eventSub) {
+      eventSub.disconnect();
+      eventSub = null;
+    }
     stopFx();
     actor.classList.remove('on');
     actor.classList.add('out');
