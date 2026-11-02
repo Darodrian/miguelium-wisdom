@@ -86,8 +86,11 @@
       <h2 id="connection-title">Conectar Twitch</h2>
       <button type="button" id="btn-connect">Conectar cuenta de Twitch</button>
       <div id="connection-connected" hidden>
-        <span id="connection-status">Conectado</span>
-        <button type="button" id="btn-copy-url" disabled>Copiar URL de OBS</button>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span id="connection-status">Conectado</span>
+          <button type="button" id="btn-logout" style="margin-left:auto;">Desconectar</button>
+        </div>
+        <button type="button" id="btn-copy-url" disabled style="margin-top:8px;">Copiar URL de OBS</button>
       </div>
     </div>
     <div id="settings-section" hidden class="panel">
@@ -128,13 +131,14 @@ import {
   cfg, configured, savedAmount, saveAmount, createBridge,
   savedPreviewMute, savePreviewMute,
 } from './js/bridge.js';
-import { TWITCH_OAUTH_BASE } from './js/config.js';
+import { TWITCH_OAUTH_BASE, SUPABASE_KEY } from './js/config.js';
 import { fetchCheerState, saveCheerState } from './js/cloud.js';
 
 const $ = (id) => document.getElementById(id);
 const AMOUNT_IN = $('amount');
 const DOT_OV = $('dot-ov'), STATUS_OV = $('status-ov');
 const BTN_CONNECT = $('btn-connect'), BTN_COPY_URL = $('btn-copy-url'), BTN_SAVE = $('btn-save');
+const BTN_LOGOUT = $('btn-logout');
 const BTN_FLIP = $('btn-flip'), BTN_TEST = $('btn-test'), TEST_OVERLAY = $('test-overlay');
 const MUTE_PREVIEW = $('mute-preview');
 const PREVIEW = $('preview'), PREVIEW_NOTE = $('preview-note'), EVENTS = $('events'), MSG = $('msg');
@@ -260,7 +264,9 @@ if (BTN_CONNECT) {
   BTN_CONNECT.addEventListener('click', () => {
     // Dile al Edge Function a qué dashboard volver tras autorizar en Twitch,
     // ya que miguelium-wisdom y goal-overlay comparten la misma función.
-    const redirect = new URL('dashboard.html', location.href).href;
+    // Pasamos la URL del directorio (sin dashboard.html) para que la función
+    // pueda construir la URL completa correctamente.
+    const redirect = new URL('.', location.href).href;
     const authUrl = `${TWITCH_OAUTH_BASE}/authorize?redirect=${encodeURIComponent(redirect)}`;
     location.href = authUrl;
   });
@@ -287,6 +293,33 @@ BTN_COPY_URL.addEventListener('click', async () => {
   await copyText(buildOverlayUrl(broadcasterId));
   flash('URL de OBS copiada');
 });
+
+// ---- Logout ----
+if (BTN_LOGOUT) {
+  BTN_LOGOUT.addEventListener('click', async () => {
+    if (!broadcasterId) return;
+    try {
+      await fetch(`${TWITCH_OAUTH_BASE}/revoke?broadcaster_id=${encodeURIComponent(broadcasterId)}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+        },
+      });
+    } catch (e) {
+      console.warn('[dashboard] revoke token failed', e?.message ?? e);
+    }
+    // Clear local session
+    localStorage.removeItem('mw_broadcaster_id');
+    localStorage.removeItem('mw_broadcaster_login');
+    broadcasterId = '';
+    broadcasterLogin = '';
+    showConnected(false);
+    BTN_CONNECT.hidden = false;
+    AMOUNT_IN.value = String(DEFAULT_AMOUNT);
+    saveAmount('', DEFAULT_AMOUNT);
+    flash('Sesión cerrada');
+  });
+}
 
 BTN_FLIP.addEventListener('click', () => {
   flip = !flip;
