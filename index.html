@@ -220,14 +220,20 @@ function applyFlip() {
 }
 
 function enqueue() {
+  console.log('[overlay] enqueue called, queue length before:', queue.length);
   queue.push({ phrase: pickPhrase() });
   next();
 }
 
 function next() {
-  if (showing || !queue.length) return;
+  console.log('[overlay] next called, showing:', showing, 'queue length:', queue.length);
+  if (showing || !queue.length) {
+    console.log('[overlay] next returning early');
+    return;
+  }
   showing = true;
   const job = queue.shift();
+  console.log('[overlay] next shifting job, phrase:', job.phrase);
   show(job);
 }
 
@@ -238,6 +244,7 @@ function stopFx() {
 }
 
 function show(job) {
+  console.log('[overlay] show called, phrase:', job.phrase);
   stopFx();
   textEl.textContent = '';
 
@@ -247,6 +254,7 @@ function show(job) {
   actor.classList.add('on');
 
   const startTyping = (perChar) => {
+    console.log('[overlay] startTyping called, perChar:', perChar);
     let i = 0;
     typeTimer = setInterval(() => {
       i++;
