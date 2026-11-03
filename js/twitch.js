@@ -140,6 +140,23 @@ export class EventSubClient {
         };
         console.log('[eventsub] subscribe', { broadcasterId: this.broadcasterId, body });
         try {
+            // Check for existing subscriptions to avoid conflicts
+            const existingRes = await fetch(`${TWITCH_API}/eventsub/subscriptions`, {
+                method: 'GET',
+                headers: {
+                    Authorization: `Bearer ${this.accessToken}`,
+                    'Client-Id': TWITCH_CLIENT_ID,
+                },
+            });
+            if (existingRes.ok) {
+                const existing = await existingRes.json();
+                const existingCheer = existing.data?.find((s) => s.type === 'channel.cheer' && s.status === 'enabled');
+                if (existingCheer) {
+                    console.log('[eventsub] existing channel.cheer subscription found, reusing', { id: existingCheer.id });
+                    this.subscribed = true;
+                    return;
+                }
+            }
             const validateRes = await fetch('https://id.twitch.tv/oauth2/validate', {
                 headers: { Authorization: `Bearer ${this.accessToken}` },
             });
