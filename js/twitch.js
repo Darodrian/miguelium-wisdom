@@ -140,7 +140,9 @@ export class EventSubClient {
         };
         console.log('[eventsub] subscribe', { broadcasterId: this.broadcasterId, body });
         try {
-            // Check for existing subscriptions to avoid conflicts
+            // EventSub subscriptions are tied to a specific websocket session_id.
+            // Every new session must create its own subscription; old ones
+            // become dead the moment their session closes.
             const existingRes = await fetch(`${TWITCH_API}/eventsub/subscriptions`, {
                 method: 'GET',
                 headers: {
@@ -155,24 +157,16 @@ export class EventSubClient {
                     count: allCheer?.length,
                     list: allCheer?.map((s) => ({ id: s.id, status: s.status, condition: s.condition })),
                 });
-                const existingCheer = allCheer?.find((s) => s.status === 'enabled');
-                if (existingCheer) {
-                    console.log('[eventsub] existing channel.cheer subscription found, reusing', { id: existingCheer.id });
-                    this.subscribed = true;
-                    return;
-                }
-                // Delete any non-enabled channel.cheer subscriptions to clear conflicts
+                // Delete ALL existing cheer subscriptions — none belong to this session.
                 for (const sub of allCheer || []) {
-                    if (sub.status !== 'enabled') {
-                        console.log('[eventsub] deleting stale subscription', { id: sub.id, status: sub.status });
-                        await fetch(`${TWITCH_API}/eventsub/subscriptions?id=${sub.id}`, {
-                            method: 'DELETE',
-                            headers: {
-                                Authorization: `Bearer ${this.accessToken}`,
-                                'Client-Id': TWITCH_CLIENT_ID,
-                            },
-                        });
-                    }
+                    console.log('[eventsub] deleting subscription for old session', { id: sub.id, status: sub.status });
+                    await fetch(`${TWITCH_API}/eventsub/subscriptions?id=${sub.id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            Authorization: `Bearer ${this.accessToken}`,
+                            'Client-Id': TWITCH_CLIENT_ID,
+                        },
+                    });
                 }
             } else {
                 console.warn('[eventsub] failed to list existing subscriptions', existingRes.status);
