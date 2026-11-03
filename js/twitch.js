@@ -140,6 +140,19 @@ export class EventSubClient {
         };
         console.log('[eventsub] subscribe', { broadcasterId: this.broadcasterId, body });
         try {
+            const validateRes = await fetch('https://id.twitch.tv/oauth2/validate', {
+                headers: { Authorization: `Bearer ${this.accessToken}` },
+            });
+            if (validateRes.ok) {
+                const tokenInfo = await validateRes.json();
+                console.log('[eventsub] token info', {
+                    broadcasterId: this.broadcasterId,
+                    tokenUserId: tokenInfo.user_id,
+                    tokenLogin: tokenInfo.login,
+                    scopes: tokenInfo.scopes,
+                    clientId: tokenInfo.client_id,
+                });
+            }
             const res = await fetch(`${TWITCH_API}/eventsub/subscriptions`, {
                 method: 'POST',
                 headers: {
