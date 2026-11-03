@@ -84,6 +84,7 @@ export function createBridge(room) {
         handlers.status.forEach((h) => h(status));
         if (status === 'SUBSCRIBED') finish(resolve);
         else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') finish(reject, new Error(status));
+        else finish(reject, new Error(status));
       });
     });
   }

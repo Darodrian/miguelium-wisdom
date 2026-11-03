@@ -143,10 +143,19 @@ export class EventSubClient {
             });
             if (!res.ok) {
                 const text = await res.text();
-                console.warn('[eventsub] subscribe failed', res.status, text);
-                if (res.status === 403) {
+                let errorMessage = '';
+                try {
+                    errorMessage = JSON.parse(text)?.message || text;
+                } catch (e) {
+                    errorMessage = text;
+                }
+                console.warn('[eventsub] subscribe failed', res.status, errorMessage);
+                if (res.status === 403 && /affiliate|partner/i.test(errorMessage)) {
                     this.affiliateRequired = true;
                     this.onAffiliateRequired?.();
+                } else if (res.status === 403) {
+                    // 403 por falta de autorizacion/token/scope: no es un problema de afiliado.
+                    console.warn('[eventsub] 403 no es por afiliado/partner; revisar token y scopes');
                 }
                 return;
             }

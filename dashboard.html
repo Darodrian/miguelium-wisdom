@@ -313,7 +313,8 @@ async function startRoom() {
   } catch (e) {
     if (gen !== roomGen) return;
     const m = (e && e.message) || '';
-    setOverlay('err', m === 'CHANNEL_ERROR' ? 'Error de conexion' : m === 'TIMED_OUT' ? 'Sin respuesta' : 'No se pudo conectar la sala');
+    console.error('[dashboard] room connect failed', e);
+    setOverlay('err', m === 'CHANNEL_ERROR' ? 'Error de conexion' : m === 'TIMED_OUT' ? 'Sin respuesta' : 'No se pudo conectar la sala: ' + m);
   }
 }
 
