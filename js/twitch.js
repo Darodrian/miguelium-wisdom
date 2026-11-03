@@ -36,6 +36,7 @@ export class EventSubClient {
         this.seenMessageIds = new Set();
         this.accessToken = null;
         this.affiliateRequired = false;
+        this.subscriptionFailed = false;
     }
 
     async connect(accessToken) {
@@ -62,6 +63,10 @@ export class EventSubClient {
             this.subscribed = false;
             if (this.affiliateRequired) {
                 console.log('[eventsub] affiliate required, stopping reconnect loop');
+                return;
+            }
+            if (this.subscriptionFailed) {
+                console.log('[eventsub] subscription failed permanently, stopping reconnect loop');
                 return;
             }
             this.scheduleReconnect();
@@ -159,6 +164,7 @@ export class EventSubClient {
                 } else if (res.status === 403) {
                     // 403 por falta de autorizacion/token/scope: no es un problema de afiliado.
                     console.warn('[eventsub] 403 no es por afiliado/partner; revisar token y scopes');
+                    this.subscriptionFailed = true;
                 }
                 return;
             }
@@ -225,5 +231,6 @@ export class EventSubClient {
         this.sessionId = null;
         this.subscribed = false;
         this.affiliateRequired = false;
+        this.subscriptionFailed = false;
     }
 }
