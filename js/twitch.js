@@ -150,12 +150,32 @@ export class EventSubClient {
             });
             if (existingRes.ok) {
                 const existing = await existingRes.json();
-                const existingCheer = existing.data?.find((s) => s.type === 'channel.cheer' && s.status === 'enabled');
+                const allCheer = existing.data?.filter((s) => s.type === 'channel.cheer');
+                console.log('[eventsub] existing channel.cheer subscriptions', {
+                    count: allCheer?.length,
+                    list: allCheer?.map((s) => ({ id: s.id, status: s.status, condition: s.condition })),
+                });
+                const existingCheer = allCheer?.find((s) => s.status === 'enabled');
                 if (existingCheer) {
                     console.log('[eventsub] existing channel.cheer subscription found, reusing', { id: existingCheer.id });
                     this.subscribed = true;
                     return;
                 }
+                // Delete any non-enabled channel.cheer subscriptions to clear conflicts
+                for (const sub of allCheer || []) {
+                    if (sub.status !== 'enabled') {
+                        console.log('[eventsub] deleting stale subscription', { id: sub.id, status: sub.status });
+                        await fetch(`${TWITCH_API}/eventsub/subscriptions?id=${sub.id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                Authorization: `Bearer ${this.accessToken}`,
+                                'Client-Id': TWITCH_CLIENT_ID,
+                            },
+                        });
+                    }
+                }
+            } else {
+                console.warn('[eventsub] failed to list existing subscriptions', existingRes.status);
             }
             const validateRes = await fetch('https://id.twitch.tv/oauth2/validate', {
                 headers: { Authorization: `Bearer ${this.accessToken}` },

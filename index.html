@@ -278,6 +278,7 @@ function show(job) {
 
 // Cheers oficiales via Twitch EventSub (reemplaza ComfyJS).
 let eventSub = null;
+let bridge;
 
 async function startEventSub() {
   if (!BROADCASTER_ID) return;
@@ -314,7 +315,7 @@ function showAffiliateRequired() {
 }
 
 if (configured() && BROADCASTER_ID) {
-  const bridge = createBridge(BROADCASTER_ID);
+  bridge = createBridge(BROADCASTER_ID);
   bridge.onSet((p) => {
     const n = Number(p && p.amount);
     if (Number.isFinite(n) && n > 0) {
