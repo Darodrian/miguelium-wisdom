@@ -7,6 +7,7 @@ const EVENT_SUB_WS = 'wss://eventsub.wss.twitch.tv/ws';
 
 // ---- Token: obtenido del Edge Function (maneja refresh server-side) ----
 export async function getAccessToken(broadcasterId) {
+    console.log('[eventsub] getAccessToken', { broadcasterId });
     const res = await fetch(`${TWITCH_OAUTH_BASE}/token?broadcaster_id=${encodeURIComponent(broadcasterId)}`, {
         headers: {
             Authorization: `Bearer ${SUPABASE_KEY}`,
@@ -126,6 +127,13 @@ export class EventSubClient {
 
     async subscribe() {
         if (this.subscribed || !this.sessionId || !this.accessToken) return;
+        const body = {
+            type: 'channel.cheer',
+            version: '1',
+            condition: { broadcaster_user_id: this.broadcasterId },
+            transport: { method: 'websocket', session_id: this.sessionId },
+        };
+        console.log('[eventsub] subscribe', { broadcasterId: this.broadcasterId, body });
         try {
             const res = await fetch(`${TWITCH_API}/eventsub/subscriptions`, {
                 method: 'POST',
@@ -134,12 +142,7 @@ export class EventSubClient {
                     'Client-Id': TWITCH_CLIENT_ID,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    type: 'channel.cheer',
-                    version: '1',
-                    condition: { broadcaster_user_id: this.broadcasterId },
-                    transport: { method: 'websocket', session_id: this.sessionId },
-                }),
+                body: JSON.stringify(body),
             });
             if (!res.ok) {
                 const text = await res.text();
@@ -149,7 +152,7 @@ export class EventSubClient {
                 } catch (e) {
                     errorMessage = text;
                 }
-                console.warn('[eventsub] subscribe failed', res.status, errorMessage);
+                console.warn('[eventsub] subscribe failed', res.status, errorMessage, { broadcasterId: this.broadcasterId });
                 if (res.status === 403 && /affiliate|partner/i.test(errorMessage)) {
                     this.affiliateRequired = true;
                     this.onAffiliateRequired?.();
