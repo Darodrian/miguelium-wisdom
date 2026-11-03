@@ -119,6 +119,7 @@ export function createBridge(room) {
     onSet(fn) { handlers.set.push(fn); },
     onFlip(fn) { handlers.flip.push(fn); },
     onTest(fn) { handlers.test.push(fn); },
+    onCheer(fn) { handlers.cheer.push(fn); },
     onDisconnect(fn) { handlers.disconnect.push(fn); },
   };
 }
