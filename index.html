@@ -287,6 +287,7 @@ async function startEventSub() {
       const bits = Number(event && event.bits);
       if (Number.isFinite(bits) && bits === amount) {
         enqueue();
+        bridge.sendCheer({ user: event && event.user_name, bits });
       }
     }, () => {
       showAffiliateRequired();

@@ -303,6 +303,7 @@ async function startRoom() {
       setOverlay('live', 'Overlay conectado');
       roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement, palette });
     });
+    roomBridge.onCheer(({ user, bits }) => logEvent(user, bits));
     await roomBridge.connect();
     if (gen !== roomGen) return;
     roomActive = true;
