@@ -140,50 +140,12 @@ export class EventSubClient {
         };
         console.log('[eventsub] subscribe', { broadcasterId: this.broadcasterId, body });
         try {
-            // EventSub subscriptions are tied to a specific websocket session_id.
-            // Every new session must create its own subscription; old ones
-            // become dead the moment their session closes.
-            const existingRes = await fetch(`${TWITCH_API}/eventsub/subscriptions`, {
-                method: 'GET',
-                headers: {
-                    Authorization: `Bearer ${this.accessToken}`,
-                    'Client-Id': TWITCH_CLIENT_ID,
-                },
-            });
-            if (existingRes.ok) {
-                const existing = await existingRes.json();
-                const allCheer = existing.data?.filter((s) => s.type === 'channel.cheer');
-                console.log('[eventsub] existing channel.cheer subscriptions', {
-                    count: allCheer?.length,
-                    list: allCheer?.map((s) => ({ id: s.id, status: s.status, condition: s.condition })),
-                });
-                // Delete ALL existing cheer subscriptions — none belong to this session.
-                for (const sub of allCheer || []) {
-                    console.log('[eventsub] deleting subscription for old session', { id: sub.id, status: sub.status });
-                    await fetch(`${TWITCH_API}/eventsub/subscriptions?id=${sub.id}`, {
-                        method: 'DELETE',
-                        headers: {
-                            Authorization: `Bearer ${this.accessToken}`,
-                            'Client-Id': TWITCH_CLIENT_ID,
-                        },
-                    });
-                }
-            } else {
-                console.warn('[eventsub] failed to list existing subscriptions', existingRes.status);
-            }
-            const validateRes = await fetch('https://id.twitch.tv/oauth2/validate', {
-                headers: { Authorization: `Bearer ${this.accessToken}` },
-            });
-            if (validateRes.ok) {
-                const tokenInfo = await validateRes.json();
-                console.log('[eventsub] token info', {
-                    broadcasterId: this.broadcasterId,
-                    tokenUserId: tokenInfo.user_id,
-                    tokenLogin: tokenInfo.login,
-                    scopes: tokenInfo.scopes,
-                    clientId: tokenInfo.client_id,
-                });
-            }
+            // Each websocket session must create its own subscription, but this
+            // client must not delete anyone else's: the OBS overlay and the
+            // dashboard preview are separate sessions, so deleting "old"
+            // subscriptions made whichever page loaded last steal the cheers
+            // from the other. Stale ones from dead sessions are cleaned up by
+            // Twitch on their own.
             const res = await fetch(`${TWITCH_API}/eventsub/subscriptions`, {
                 method: 'POST',
                 headers: {
@@ -200,6 +162,11 @@ export class EventSubClient {
                     errorMessage = JSON.parse(text)?.message || text;
                 } catch (e) {
                     errorMessage = text;
+                }
+                if (res.status === 409) {
+                    // Same session already subscribed: treat as success.
+                    this.subscribed = true;
+                    return;
                 }
                 console.warn('[eventsub] subscribe failed', res.status, errorMessage, { broadcasterId: this.broadcasterId });
                 if (res.status === 403 && /affiliate|partner/i.test(errorMessage)) {

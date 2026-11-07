@@ -120,6 +120,11 @@ import { forSpeech, schedulePacing } from './js/speech.js';
 const BROADCASTER_ID = (() => {
   try { return new URLSearchParams(location.search).get('broadcaster_id') || ''; } catch { return ''; }
 })();
+// El preview del panel es una instancia mas del overlay. No abre un EventSub
+// propio para no competir por la suscripcion con el overlay de OBS.
+const PREVIEW_MODE = (() => {
+  try { return new URLSearchParams(location.search).get('preview') === '1'; } catch { return false; }
+})();
 const $ = (id) => document.getElementById(id);
 
 const TYPE_MS = cfg.typeMs ?? 35;
@@ -169,7 +174,9 @@ async function loadCheerThreshold() {
   }
 }
 
-loadCheerThreshold();
+// Se guarda la promesa para que el primer cheer espere el umbral de la nube
+// en vez de compararlo contra el valor por defecto de localStorage.
+const cheerThresholdReady = loadCheerThreshold();
 applyFont();
 applyStyle();
 applyMovement();
@@ -292,7 +299,8 @@ async function startEventSub() {
   if (!BROADCASTER_ID) return;
   try {
     const token = await getAccessToken(BROADCASTER_ID);
-    eventSub = new EventSubClient(BROADCASTER_ID, (event) => {
+    eventSub = new EventSubClient(BROADCASTER_ID, async (event) => {
+      await cheerThresholdReady;
       const bits = Number(event && event.bits);
       if (Number.isFinite(bits) && bits === amount) {
         enqueue();
@@ -359,6 +367,9 @@ if (configured() && BROADCASTER_ID) {
     document.title = 'Miguelium Wisdom · Desconectado';
   });
   bridge.onTest(() => enqueue());
+  // El preview refleja los cheers que detecta el overlay real y los publica
+  // en la sala; asi se ve igual sin abrir una segunda suscripcion de EventSub.
+  if (PREVIEW_MODE) bridge.onCheer(() => enqueue());
   bridge.onPing(() => bridge.sendHello());
   bridge.onStatus((s) => {
     if (s === 'SUBSCRIBED') {
@@ -370,7 +381,7 @@ if (configured() && BROADCASTER_ID) {
     console.error('Miguelium: sala', (e && e.message) || e);
   });
 
-  startEventSub();
+  if (!PREVIEW_MODE) startEventSub();
 } else {
   console.warn('Miguelium: sin broadcaster_id — solo reacciones sin sincronizacion');
 }

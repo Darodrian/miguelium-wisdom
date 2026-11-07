@@ -246,9 +246,16 @@ function buildOverlayUrl(broadcasterId) {
   return base.href;
 }
 
+// El preview no abre EventSub: recibe los cheers del overlay real por la sala.
+function buildPreviewUrl(broadcasterId) {
+  const url = new URL(buildOverlayUrl(broadcasterId));
+  url.searchParams.set('preview', '1');
+  return url.href;
+}
+
 function updatePreview() {
   if (broadcasterId) {
-    PREVIEW.src = buildOverlayUrl(broadcasterId);
+    PREVIEW.src = buildPreviewUrl(broadcasterId);
     PREVIEW.hidden = false;
     PREVIEW_NOTE.textContent = 'Preview en vivo: lo que veas aqui es lo que se pone en OBS.';
   } else {
