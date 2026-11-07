@@ -227,6 +227,25 @@ function flash(text) {
   }, 5000);
 }
 
+const SETTING_KEYS = ['mw_font', 'mw_style', 'mw_fontSize', 'mw_movement', 'mw_palette'];
+
+// Lee siempre de localStorage (fuente de verdad compartida entre pestañas y overlay)
+// para que una variable en memoria desactualizada no resucite un valor viejo.
+function readSettings() {
+  return {
+    font: localStorage.getItem('mw_font') || 'Georgia',
+    style: localStorage.getItem('mw_style') || 'default',
+    fontSize: Number(localStorage.getItem('mw_fontSize')) || 22,
+    movement: localStorage.getItem('mw_movement') || 'off',
+    palette: localStorage.getItem('mw_palette') || 'default',
+  };
+}
+
+function broadcastSettings() {
+  if (!roomBridge) return;
+  roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), ...readSettings() });
+}
+
 function showConnected(connected) {
   if (CONNECTION_PANEL) CONNECTION_PANEL.hidden = false;
   if (CONNECTION_TITLE) CONNECTION_TITLE.textContent = connected ? 'Conectado' : 'Conectar Twitch';
@@ -308,7 +327,7 @@ async function startRoom() {
     roomBridge.onHello(() => {
       lastHello = Date.now();
       setOverlay('live', 'Overlay conectado');
-      roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement, palette });
+      broadcastSettings();
     });
     roomBridge.onCheer(({ user, bits }) => logEvent(user, bits));
     await roomBridge.connect();
@@ -343,7 +362,7 @@ BTN_SAVE.addEventListener('click', async () => {
   const v = Math.max(1, Math.floor(Number(AMOUNT_IN.value) || DEFAULT_AMOUNT));
   AMOUNT_IN.value = String(v);
   saveAmount(broadcasterId, v);
-  if (roomBridge) roomBridge.sendSet({ amount: v, font, style, fontSize, movement, palette });
+  if (roomBridge) roomBridge.sendSet({ amount: v, ...readSettings() });
   try {
     await saveCheerState(broadcasterId, v);
   } catch (e) {
@@ -425,29 +444,47 @@ BTN_TEST.addEventListener('click', () => {
 FONT_SELECT.addEventListener('change', () => {
   font = FONT_SELECT.value;
   localStorage.setItem('mw_font', font);
-  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement, palette });
+  broadcastSettings();
 });
 STYLE_SELECT.addEventListener('change', () => {
   style = STYLE_SELECT.value;
   localStorage.setItem('mw_style', style);
-  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement, palette });
+  broadcastSettings();
 });
 FONT_SIZE_IN.addEventListener('input', () => {
   fontSize = Number(FONT_SIZE_IN.value) || 22;
   localStorage.setItem('mw_fontSize', fontSize);
-  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement, palette });
+  broadcastSettings();
 });
 
 MOVEMENT_SELECT.addEventListener('change', () => {
   movement = MOVEMENT_SELECT.value;
   localStorage.setItem('mw_movement', movement);
-  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement, palette });
+  broadcastSettings();
 });
 
 PALETTE_SELECT.addEventListener('change', () => {
   palette = PALETTE_SELECT.value;
   localStorage.setItem('mw_palette', palette);
-  if (roomBridge) roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), font, style, fontSize, movement, palette });
+  broadcastSettings();
+});
+
+// Otra pestaña del panel cambio un ajuste: sincroniza variables y controles
+// para que esta pestaña no vuelva a difundir el valor viejo.
+window.addEventListener('storage', (e) => {
+  if (!SETTING_KEYS.includes(e.key)) return;
+  const s = readSettings();
+  font = s.font;
+  style = s.style;
+  fontSize = s.fontSize;
+  movement = s.movement;
+  palette = s.palette;
+  // No tocar el control que el usuario esta editando ahora mismo.
+  if (document.activeElement !== FONT_SELECT) FONT_SELECT.value = font;
+  if (document.activeElement !== STYLE_SELECT) STYLE_SELECT.value = style;
+  if (document.activeElement !== FONT_SIZE_IN) FONT_SIZE_IN.value = String(fontSize);
+  if (document.activeElement !== MOVEMENT_SELECT) MOVEMENT_SELECT.value = movement;
+  if (document.activeElement !== PALETTE_SELECT) PALETTE_SELECT.value = palette;
 });
 
 // Mute del preview: el panel guarda el estado y el overlay solo obedece.
