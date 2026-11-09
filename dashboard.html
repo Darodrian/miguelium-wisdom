@@ -107,6 +107,7 @@
       <h2>Vista</h2>
       <div class="seg">
         <button id="btn-flip" type="button" aria-pressed="false">Voltear horizontal</button>
+        <button id="btn-character" type="button" aria-pressed="false">Personaje: Miguelium</button>
       </div>
       <button type="button" id="btn-test">Probar animacion</button>
       <label class="row"><input id="test-overlay" type="checkbox" checked> Mostrar tambien en el overlay de OBS</label>
@@ -190,7 +191,7 @@ const AMOUNT_IN = $('amount');
 const DOT_OV = $('dot-ov'), STATUS_OV = $('status-ov');
 const BTN_CONNECT = $('btn-connect'), BTN_COPY_URL = $('btn-copy-url'), BTN_SAVE = $('btn-save');
 const BTN_LOGOUT = $('btn-logout');
-const BTN_FLIP = $('btn-flip'), BTN_TEST = $('btn-test'), TEST_OVERLAY = $('test-overlay');
+const BTN_FLIP = $('btn-flip'), BTN_CHARACTER = $('btn-character'), BTN_TEST = $('btn-test'), TEST_OVERLAY = $('test-overlay');
 const MUTE_PREVIEW = $('mute-preview');
 const FONT_SELECT = $('font-select'), STYLE_SELECT = $('style-select'), FONT_SIZE_IN = $('font-size'), MOVEMENT_SELECT = $('movement-select'), PALETTE_SELECT = $('palette-select');
 const PREVIEW = $('preview'), PREVIEW_NOTE = $('preview-note'), EVENTS = $('events'), MSG = $('msg');
@@ -209,6 +210,7 @@ let style = localStorage.getItem('mw_style') || 'default';
 let fontSize = Number(localStorage.getItem('mw_fontSize')) || 22;
 let movement = localStorage.getItem('mw_movement') || 'off';
 let palette = localStorage.getItem('mw_palette') || 'default';
+let character = localStorage.getItem('mw_character') || 'miguelium';
 let lastHello = 0;
 let roomActive = false;
 let roomBridge = null;
@@ -216,6 +218,12 @@ let roomGen = 0;
 let flashTimer = null;
 
 function setOverlay(kind, text) { DOT_OV.className = 'dot' + (kind ? ' ' + kind : ''); STATUS_OV.textContent = text; }
+
+function applyCharacterButton() {
+  BTN_CHARACTER.textContent = 'Personaje: ' + (CHARACTER_LABELS[character] || CHARACTER_LABELS.miguelium);
+  BTN_CHARACTER.classList.toggle('on', character === 'rowlet');
+  BTN_CHARACTER.setAttribute('aria-pressed', String(character === 'rowlet'));
+}
 
 function flash(text) {
   MSG.textContent = text;
@@ -227,7 +235,8 @@ function flash(text) {
   }, 5000);
 }
 
-const SETTING_KEYS = ['mw_font', 'mw_style', 'mw_fontSize', 'mw_movement', 'mw_palette'];
+const SETTING_KEYS = ['mw_font', 'mw_style', 'mw_fontSize', 'mw_movement', 'mw_palette', 'mw_character'];
+const CHARACTER_LABELS = { miguelium: 'Miguelium', rowlet: 'Ms. Rowlet' };
 
 // Lee siempre de localStorage (fuente de verdad compartida entre pestañas y overlay)
 // para que una variable en memoria desactualizada no resucite un valor viejo.
@@ -238,6 +247,7 @@ function readSettings() {
     fontSize: Number(localStorage.getItem('mw_fontSize')) || 22,
     movement: localStorage.getItem('mw_movement') || 'off',
     palette: localStorage.getItem('mw_palette') || 'default',
+    character: localStorage.getItem('mw_character') || 'miguelium',
   };
 }
 
@@ -431,6 +441,13 @@ BTN_FLIP.addEventListener('click', () => {
   if (roomBridge) roomBridge.sendFlip(flip);
 });
 
+BTN_CHARACTER.addEventListener('click', () => {
+  character = character === 'rowlet' ? 'miguelium' : 'rowlet';
+  localStorage.setItem('mw_character', character);
+  applyCharacterButton();
+  broadcastSettings();
+});
+
 BTN_TEST.addEventListener('click', () => {
   if (TEST_OVERLAY.checked && roomBridge && roomActive) {
     roomBridge.sendTest();
@@ -479,6 +496,8 @@ window.addEventListener('storage', (e) => {
   fontSize = s.fontSize;
   movement = s.movement;
   palette = s.palette;
+  character = s.character;
+  applyCharacterButton();
   // No tocar el control que el usuario esta editando ahora mismo.
   if (document.activeElement !== FONT_SELECT) FONT_SELECT.value = font;
   if (document.activeElement !== STYLE_SELECT) STYLE_SELECT.value = style;
@@ -493,6 +512,8 @@ function sendMute() {
   const win = PREVIEW.contentWindow;
   if (win) win.postMessage({ type: 'mute', value: MUTE_PREVIEW.checked }, '*');
 }
+
+applyCharacterButton();
 
 MUTE_PREVIEW.checked = savedPreviewMute();
 MUTE_PREVIEW.addEventListener('change', () => {

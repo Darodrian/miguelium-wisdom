@@ -104,7 +104,7 @@
 <div id="stage">
   <div id="actor">
     <div id="bubble"><span id="text"></span></div>
-    <img id="img-mig" src="miguelium.png" alt="Miguelium">
+    <img id="img-mig" src="assets/miguelium.png" alt="Miguelium">
   </div>
 </div>
 
@@ -144,6 +144,12 @@ let style = localStorage.getItem('mw_style') || 'default';
 let fontSize = Number(localStorage.getItem('mw_fontSize')) || 22;
 let movement = localStorage.getItem('mw_movement') || 'off';
 let palette = localStorage.getItem('mw_palette') || 'default';
+let character = localStorage.getItem('mw_character') || 'miguelium';
+
+const CHARACTERS = {
+  miguelium: { src: 'assets/miguelium.png', alt: 'Miguelium' },
+  rowlet: { src: 'assets/ms-rowlet.png', alt: 'Ms. Rowlet' },
+};
 
 function applyFont() {
   textEl.style.fontFamily = font;
@@ -159,6 +165,12 @@ function applyStyle() {
 function applyMovement() {
   actor.classList.remove('movement-off', 'movement-swing', 'movement-bob');
   actor.classList.add('movement-' + movement);
+}
+
+function applyCharacter() {
+  const c = CHARACTERS[character] || CHARACTERS.miguelium;
+  migEl.src = c.src;
+  migEl.alt = c.alt;
 }
 
 async function loadCheerThreshold() {
@@ -180,6 +192,7 @@ const cheerThresholdReady = loadCheerThreshold();
 applyFont();
 applyStyle();
 applyMovement();
+applyCharacter();
 let flip = false;
 let phrases = [];
 // Historial de índices de frases recientes para evitar repeticiones cercanas.
@@ -343,6 +356,7 @@ if (configured() && BROADCASTER_ID) {
     if (p && p.fontSize) { fontSize = Number(p.fontSize); localStorage.setItem('mw_fontSize', fontSize); applyFont(); }
     if (p && p.movement) { movement = p.movement; localStorage.setItem('mw_movement', movement); applyMovement(); }
     if (p && p.palette) { palette = p.palette; localStorage.setItem('mw_palette', palette); applyStyle(); }
+    if (p && p.character) { character = p.character; localStorage.setItem('mw_character', character); applyCharacter(); }
   });
   bridge.onFlip((p) => {
     if (p && typeof p.flip === 'boolean') {
