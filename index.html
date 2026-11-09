@@ -38,19 +38,6 @@
     font-family: Georgia, 'Times New Roman', serif;
     font-size: 22px; line-height: 1.35; text-align: center;
   }
-  #bubble.style-dark {
-    background: rgba(16, 24, 39, 0.96); color: #e8ecf4;
-  }
-  #bubble.style-dark::after {
-    border-top-color: rgba(16, 24, 39, 0.96);
-  }
-  #bubble.style-neon {
-    background: rgba(0, 255, 255, 0.9); color: #101010;
-    font-weight: 700;
-  }
-  #bubble.style-neon::after {
-    border-top-color: rgba(0, 255, 255, 0.9);
-  }
   #bubble.style-grape { background: rgba(169, 149, 250, 0.96); color: #101010; }
   #bubble.style-grape::after { border-top-color: rgba(169, 149, 250, 0.96); }
   #bubble.style-sapphire { background: rgba(121, 146, 233, 0.96); color: #101010; }
@@ -140,7 +127,6 @@ const migEl = $('img-mig');
 
 let amount = savedAmount(BROADCASTER_ID, cfg.amountDefault ?? 100);
 let font = localStorage.getItem('mw_font') || 'Georgia';
-let style = localStorage.getItem('mw_style') || 'default';
 let fontSize = Number(localStorage.getItem('mw_fontSize')) || 22;
 let movement = localStorage.getItem('mw_movement') || 'off';
 let palette = localStorage.getItem('mw_palette') || 'default';
@@ -157,9 +143,8 @@ function applyFont() {
 }
 
 function applyStyle() {
-  const cls = palette !== 'default' ? palette : style;
-  bubbleEl.classList.remove('style-default', 'style-dark', 'style-neon', 'style-grape', 'style-sapphire', 'style-ocean', 'style-emerald', 'style-green', 'style-snow', 'style-carbon', 'style-orange', 'style-chocolate', 'style-cherry', 'style-red', 'style-yellow', 'style-chalk');
-  bubbleEl.classList.add('style-' + cls);
+  bubbleEl.classList.remove('style-default', 'style-grape', 'style-sapphire', 'style-ocean', 'style-emerald', 'style-green', 'style-snow', 'style-carbon', 'style-orange', 'style-chocolate', 'style-cherry', 'style-red', 'style-yellow', 'style-chalk');
+  bubbleEl.classList.add('style-' + palette);
 }
 
 function applyMovement() {
@@ -352,7 +337,6 @@ if (configured() && BROADCASTER_ID) {
       saveAmount(BROADCASTER_ID, amount);
     }
     if (p && p.font) { font = p.font; localStorage.setItem('mw_font', font); applyFont(); }
-    if (p && p.style) { style = p.style; localStorage.setItem('mw_style', style); applyStyle(); }
     if (p && p.fontSize) { fontSize = Number(p.fontSize); localStorage.setItem('mw_fontSize', fontSize); applyFont(); }
     if (p && p.movement) { movement = p.movement; localStorage.setItem('mw_movement', movement); applyMovement(); }
     if (p && p.palette) { palette = p.palette; localStorage.setItem('mw_palette', palette); applyStyle(); }
