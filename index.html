@@ -291,26 +291,40 @@ function show(job) {
 
 // Cheers oficiales via Twitch EventSub (reemplaza ComfyJS).
 let eventSub = null;
+let eventSubStarting = false;
 let bridge;
 
 async function startEventSub() {
-  if (!BROADCASTER_ID) return;
+  if (!BROADCASTER_ID || PREVIEW_MODE || eventSub || eventSubStarting) return;
+  eventSubStarting = true;
+  let delay = 5000;
   try {
-    const token = await getAccessToken(BROADCASTER_ID);
-    eventSub = new EventSubClient(BROADCASTER_ID, async (event) => {
-      await cheerThresholdReady;
-      const bits = Number(event && event.bits);
-      if (Number.isFinite(bits) && bits === amount) {
-        enqueue();
-        bridge.sendCheer({ user: event && event.user_name, bits });
+    while (!eventSub) {
+      try {
+        const token = await getAccessToken(BROADCASTER_ID);
+        eventSub = new EventSubClient(BROADCASTER_ID, async (event) => {
+          await cheerThresholdReady;
+          const bits = Number(event && event.bits);
+          if (Number.isFinite(bits) && bits === amount) {
+            enqueue();
+            bridge.sendCheer({ user: event && event.user_name, bits });
+          }
+        }, () => {
+          showAffiliateRequired();
+        });
+        eventSub.connect(token);
+        return;
+      } catch (e) {
+        console.warn('[eventsub] start failed; reintentando', (e && e.message) || e);
+        // Token revocado (logout real): no hay nada que reintentar.
+        const msg = (e && e.message) || '';
+        if (msg.includes('(404)') || msg.includes('no_token')) return;
+        await new Promise((r) => setTimeout(r, delay));
+        delay = Math.min(delay * 2, 60000);
       }
-    }, () => {
-      showAffiliateRequired();
-    });
-    eventSub.connect(token);
-  } catch (e) {
-    console.warn('[eventsub] start failed', (e && e.message) || e);
-    // El overlay sigue en pie sin reacciones a cheers oficiales.
+    }
+  } finally {
+    eventSubStarting = false;
   }
 }
 
@@ -368,7 +382,12 @@ if (configured() && BROADCASTER_ID) {
   // El preview refleja los cheers que detecta el overlay real y los publica
   // en la sala; asi se ve igual sin abrir una segunda suscripcion de EventSub.
   if (PREVIEW_MODE) bridge.onCheer(() => enqueue());
-  bridge.onPing(() => bridge.sendHello());
+  bridge.onPing(() => {
+    bridge.sendHello();
+    // El panel volvio a la sala (p.ej. tras Desconectar): reactivar EventSub
+    // para que el overlay no quede sordo hasta el proximo reload.
+    if (!eventSub) startEventSub();
+  });
   bridge.onStatus((s) => {
     if (s === 'SUBSCRIBED') {
       bridge.sendHello();
