@@ -74,6 +74,16 @@ test('migrateLegacyCharacter no toca miguelium', () => {
   assert.equal(localStorage.getItem('mw_character'), 'miguelium');
 });
 
+test('scoped save is not visible through an un-scoped read (per-character isolation)', () => {
+  store.clear();
+  saveAllSettings('B1', CHARACTER_MIGUELIUM, { amount: 150, font: 'ZPix' });
+  const scoped = readAllSettings('B1', CHARACTER_MIGUELIUM);
+  const unscoped = readAllSettings('', CHARACTER_MIGUELIUM);
+  assert.equal(scoped.amount, 150);
+  assert.equal(scoped.font, 'ZPix');
+  assert.notEqual(unscoped.amount, scoped.amount);
+});
+
 test('isValidCharacter reconoce solo los dos personajes', () => {
   assert.equal(isValidCharacter('miguelium'), true);
   assert.equal(isValidCharacter('ms-rowlet'), true);

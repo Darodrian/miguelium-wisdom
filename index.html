@@ -397,7 +397,11 @@ if (configured() && BROADCASTER_ID) {
     const n = Number(p && p.amount);
     if (Number.isFinite(n) && n > 0) {
       nextSettings.amount = Math.floor(n);
-      saveAmount(BROADCASTER_ID, nextSettings.amount);
+      // El umbral legado mw_amount_<id> semilla a miguelium; no lo sobreescribe
+      // con el umbral de otro personaje.
+      if (character === CHARACTER_MIGUELIUM) {
+        saveAmount(BROADCASTER_ID, nextSettings.amount);
+      }
       changed = true;
     }
     if (p && p.font !== undefined) { nextSettings.font = p.font; changed = true; }

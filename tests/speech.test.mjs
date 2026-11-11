@@ -77,6 +77,20 @@ test('schedulePacing falls back when speak never settles, then ignores a late an
   cancel();
 });
 
+test('schedulePacing hands speak a character option when one is given', async () => {
+  let captured;
+  const cancel = schedulePacing({
+    text: 'hola',
+    speak: (t, o) => { captured = o; return new Promise(() => {}); },
+    fallbackPerChar: 35,
+    graceMs: 1000,
+    onPace: () => {},
+    character: 'ms-rowlet',
+  });
+  assert.equal(captured.character, 'ms-rowlet');
+  cancel();
+});
+
 test('cancel silences a speak that answers afterwards', async () => {
   const calls = [];
   let opts;
@@ -106,4 +120,19 @@ test('schedulePacing hands speak an isCancelled that flips with cancel', async (
   assert.equal(opts.isCancelled(), false);
   cancel();
   assert.equal(opts.isCancelled(), true);
+});
+
+test('tts speakNow never references an undefined opts (voice regression)', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const source = await readFile(new URL('../js/tts.js', import.meta.url), 'utf8');
+  const speakNowBody = source.slice(
+    source.indexOf('async function speakNow'),
+    source.indexOf('let chain = Promise.resolve();')
+  );
+  // speakNow must destructure `character` so drawVoice receives a real character,
+  // not an undefined `opts`.
+  assert.ok(/speakNow\(message,\s*\{\s*[^}]*\bcharacter\b[^}]*\}/.test(speakNowBody),
+    'speakNow destructures character from its options');
+  assert.ok(!/drawVoice\(opts/.test(speakNowBody),
+    'speakNo longer calls drawVoice(opts ... )');
 });

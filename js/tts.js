@@ -114,7 +114,7 @@ export async function loadEngine() {
   }
 }
 
-async function speakNow(message, { onDuration, isCancelled } = {}) {
+async function speakNow(message, { onDuration, isCancelled, character } = {}) {
   // Frases ya descartadas (globo anterior cancelado) no deben sonar nunca.
   if (isCancelled && isCancelled()) return { samples: 0, voice: null };
   await loadEngine();
@@ -127,7 +127,7 @@ async function speakNow(message, { onDuration, isCancelled } = {}) {
   if (!player.sampleRate && spriteRate) player.sampleRate = spriteRate;
   addPlaybackTarget(player.audioContext);
 
-  const voice = drawVoice(opts && opts.character);
+  const voice = drawVoice(character);
   voiceChain.setVoice(voice);
 
   const cfg = engine.config;

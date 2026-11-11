@@ -273,16 +273,24 @@ function flash(text) {
 
 const CHARACTER_LABELS = { [CHARACTER_MIGUELIUM]: 'Miguelium', [CHARACTER_ROWLET]: 'Ms. Rowlet' };
 
-// Escribe los ajustes en memoria en los controles del panel.
+// Escribe los ajustes en memoria en los controles del panel. No toca el
+// control que el usuario esta editando ahora mismo, para no borrar su valor
+// a medio teclear cuando llega una sincronizacion de otra pestaña.
 function applySettingsToControls() {
   for (const c of [CHARACTER_MIGUELIUM, CHARACTER_ROWLET]) {
     const s = settings[c];
-    ctrl(c, 'amount').value = s.amount;
-    ctrl(c, 'font').value = s.font;
-    ctrl(c, 'font-size').value = s.fontSize;
-    ctrl(c, 'movement').value = s.movement;
-    ctrl(c, 'palette').value = s.palette;
-    ctrl(c, 'flip').checked = !!s.flip;
+    const amountEl = ctrl(c, 'amount');
+    if (document.activeElement !== amountEl) amountEl.value = s.amount;
+    const fontEl = ctrl(c, 'font');
+    if (document.activeElement !== fontEl) fontEl.value = s.font;
+    const fontSizeEl = ctrl(c, 'font-size');
+    if (document.activeElement !== fontSizeEl) fontSizeEl.value = s.fontSize;
+    const movementEl = ctrl(c, 'movement');
+    if (document.activeElement !== movementEl) movementEl.value = s.movement;
+    const paletteEl = ctrl(c, 'palette');
+    if (document.activeElement !== paletteEl) paletteEl.value = s.palette;
+    const flipEl = ctrl(c, 'flip');
+    if (document.activeElement !== flipEl) flipEl.checked = !!s.flip;
   }
 }
 
@@ -344,8 +352,8 @@ function wireAllControls() {
 function readSettings() {
   const out = {};
   for (const c of [CHARACTER_MIGUELIUM, CHARACTER_ROWLET]) {
-    out[c] = readAllSettings('', c);
-    if (out[c].amount <= 0) out[c].amount = defaultAmountFor('', c);
+    out[c] = readAllSettings(broadcasterId || '', c);
+    if (out[c].amount <= 0) out[c].amount = defaultAmountFor(broadcasterId || '', c);
   }
   return out;
 }
@@ -531,21 +539,12 @@ if (roomBridge && roomActive) broadcastSettings();
 window.addEventListener('storage', (e) => {
   if (!e.key) return;
   // mwchar_<broadcaster>_<character>_<setting>
-  const m = /^mwchar_(?:(.+)_)?(miguelium|ms-rowlet)_(amount|font|fontSize|movement|palette|flip)$/.exec(e.key);
+  const m = /^mwchar_(?:([^_]*)_)?(miguelium|ms-rowlet)_(amount|font|fontSize|movement|palette|flip)$/.exec(e.key);
   if (!m) return;
   const s = readSettings();
   settings[CHARACTER_MIGUELIUM] = s[CHARACTER_MIGUELIUM];
   settings[CHARACTER_ROWLET] = s[CHARACTER_ROWLET];
   applySettingsToControls();
-  // No tocar el control que el usuario esta editando ahora mismo.
-  for (const c of [CHARACTER_MIGUELIUM, CHARACTER_ROWLET]) {
-    if (document.activeElement === ctrl(c, 'amount')) continue;
-    if (document.activeElement === ctrl(c, 'font')) continue;
-    if (document.activeElement === ctrl(c, 'font-size')) continue;
-    if (document.activeElement === ctrl(c, 'movement')) continue;
-    if (document.activeElement === ctrl(c, 'palette')) continue;
-    if (document.activeElement === ctrl(c, 'flip')) continue;
-  }
   if (roomBridge && roomActive) broadcastSettings();
 });
 
@@ -608,6 +607,7 @@ async function init() {
     localStorage.setItem('mw_broadcaster_id', broadcasterId);
     localStorage.setItem('mw_broadcaster_login', broadcasterLogin);
     showConnected(true);
+    settings = readSettings();
     applySettingsToControls();
     try { await loadCloudSettings(broadcasterId); } catch (e) {
       console.warn('[dashboard] cloud character state unavailable', e?.message ?? e);
@@ -625,6 +625,7 @@ async function init() {
     broadcasterId = savedId;
     broadcasterLogin = savedLogin || '';
     showConnected(true);
+    settings = readSettings();
     applySettingsToControls();
     try { await loadCloudSettings(broadcasterId); } catch (e) {
       console.warn('[dashboard] cloud character state unavailable', e?.message ?? e);
