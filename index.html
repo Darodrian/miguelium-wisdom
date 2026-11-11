@@ -86,12 +86,14 @@
   .movement-bob #img-mig { animation: bob 0.4s ease-in-out infinite; }
   #img-mig.flip { scale: -1 1; }
 
-  /* Preview mode: scale down the overlay so character and bubble fit inside the dashboard iframe */
+  /* Preview mode: scale down the actor so character and bubble fit inside the dashboard iframe */
   body.preview-mode #stage {
-    transform: scale(0.65);
-    transform-origin: center;
-    align-items: center;
+    align-items: flex-end;
     width: 100%;
+  }
+  body.preview-mode #actor {
+    transform: scale(0.55);
+    transform-origin: bottom center;
   }
 </style>
 </head>
