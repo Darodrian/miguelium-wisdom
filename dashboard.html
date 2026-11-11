@@ -131,7 +131,7 @@
   .keybar button { padding: 5px 10px; font-size: 11px; }
   .keybar .none { font-style: italic; }
   .note { font-size: 12px; color: var(--muted); line-height: 1.5; }
-  #preview-shell { position: relative; width: 100%; height: 300px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: #000; }
+  #preview-shell { position: relative; width: 100%; height: 420px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: #000; }
   #preview { width: 100%; height: 100%; border: 0; display: block; }
   #events { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
   #events li { color: var(--muted); }
@@ -197,47 +197,8 @@
     <div class="ctrl-cell"><input id="amount-miguelium" type="number" min="1" step="1" value="100"></div>
     <div class="ctrl-cell"><input id="amount-ms-rowlet" type="number" min="1" step="1" value="100"></div>
 
-    <!-- Fuente -->
-    <div class="setting-label">Fuente</div>
-    <div class="ctrl-cell">
-      <select id="font-miguelium">
-        <option value="Georgia">Georgia (por defecto)</option>
-        <option value="ComingSoon">Coming Soon</option>
-        <option value="ZPix">ZPix</option>
-      </select>
-    </div>
-    <div class="ctrl-cell">
-      <select id="font-ms-rowlet">
-        <option value="Georgia">Georgia (por defecto)</option>
-        <option value="ComingSoon">Coming Soon</option>
-        <option value="ZPix">ZPix</option>
-      </select>
-    </div>
-
-    <!-- Tamaño de fuente -->
-    <div class="setting-label">Tamaño de fuente (px)</div>
-    <div class="ctrl-cell"><input id="font-size-miguelium" type="number" min="12" max="72" step="2" value="22"></div>
-    <div class="ctrl-cell"><input id="font-size-ms-rowlet" type="number" min="12" max="72" step="2" value="22"></div>
-
-    <!-- Movimiento al hablar -->
-    <div class="setting-label">Movimiento al hablar</div>
-    <div class="ctrl-cell">
-      <select id="movement-miguelium">
-        <option value="off">Sin movimiento</option>
-        <option value="swing">Balanceo</option>
-        <option value="bob">Subir y bajar</option>
-      </select>
-    </div>
-    <div class="ctrl-cell">
-      <select id="movement-ms-rowlet">
-        <option value="off">Sin movimiento</option>
-        <option value="swing">Balanceo</option>
-        <option value="bob">Subir y bajar</option>
-      </select>
-    </div>
-
-    <!-- Paleta de colores -->
-    <div class="setting-label">Paleta de colores</div>
+    <!-- Color (paleta) -->
+    <div class="setting-label">Color</div>
     <div class="ctrl-cell">
       <select id="palette-miguelium">
         <option value="default">Por defecto</option>
@@ -274,6 +235,45 @@
         <option value="chalk">Chalk</option>
       </select>
     </div>
+
+    <!-- Animación (movimiento) -->
+    <div class="setting-label">Animación</div>
+    <div class="ctrl-cell">
+      <select id="movement-miguelium">
+        <option value="off">Sin animación</option>
+        <option value="swing">Balanceo</option>
+        <option value="bob">Subir y bajar</option>
+      </select>
+    </div>
+    <div class="ctrl-cell">
+      <select id="movement-ms-rowlet">
+        <option value="off">Sin animación</option>
+        <option value="swing">Balanceo</option>
+        <option value="bob">Subir y bajar</option>
+      </select>
+    </div>
+
+    <!-- Fuente -->
+    <div class="setting-label">Fuente</div>
+    <div class="ctrl-cell">
+      <select id="font-miguelium">
+        <option value="Georgia">Georgia (por defecto)</option>
+        <option value="ComingSoon">Coming Soon</option>
+        <option value="ZPix">ZPix</option>
+      </select>
+    </div>
+    <div class="ctrl-cell">
+      <select id="font-ms-rowlet">
+        <option value="Georgia">Georgia (por defecto)</option>
+        <option value="ComingSoon">Coming Soon</option>
+        <option value="ZPix">ZPix</option>
+      </select>
+    </div>
+
+    <!-- Tamaño de fuente -->
+    <div class="setting-label">Tamaño de fuente (px)</div>
+    <div class="ctrl-cell"><input id="font-size-miguelium" type="number" min="12" max="72" step="2" value="22"></div>
+    <div class="ctrl-cell"><input id="font-size-ms-rowlet" type="number" min="12" max="72" step="2" value="22"></div>
 
     <!-- Voltear horizontal -->
     <div class="setting-label">Voltear horizontal</div>
