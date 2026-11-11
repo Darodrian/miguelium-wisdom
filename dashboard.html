@@ -105,58 +105,104 @@
     </div>
     <div class="panel">
       <h2>Vista</h2>
-      <div class="seg">
-        <button id="btn-flip" type="button" aria-pressed="false">Voltear horizontal</button>
-        <button id="btn-character" type="button" aria-pressed="false">Personaje: Miguelium</button>
-      </div>
-      <button type="button" id="btn-test">Probar animacion</button>
       <label class="row"><input id="test-overlay" type="checkbox" checked> Mostrar tambien en el overlay de OBS</label>
       <label class="row"><input id="mute-preview" type="checkbox"> Silenciar voz del preview</label>
     </div>
 
-    <div id="settings-section" hidden class="panel">
-      <h2>Configuración</h2>
-      <label class="field">Bits
-        <div class="row">
-          <input id="amount" type="number" min="1" step="1" style="flex:1" value="100">
-          <button id="btn-save" type="button">Guardar</button>
-        </div>
-      </label>
-      <label class="field">Fuente
-        <select id="font-select">
-          <option value="Georgia">Georgia (por defecto)</option>
-          <option value="ComingSoon">Coming Soon</option>
-          <option value="ZPix">ZPix</option>
-        </select>
-      </label>
-      <label class="field">Tamaño de fuente (px)
-        <input id="font-size" type="number" min="12" max="72" step="2" value="22">
-      </label>
-      <label class="field">Movimiento al hablar
-        <select id="movement-select">
-          <option value="off">Sin movimiento</option>
-          <option value="swing">Balanceo</option>
-          <option value="bob">Subir y bajar</option>
-        </select>
-      </label>
-      <label class="field">Paleta de colores
-        <select id="palette-select">
-          <option value="default">Por defecto</option>
-          <option value="grape">Grape</option>
-          <option value="sapphire">Sapphire</option>
-          <option value="ocean">Ocean</option>
-          <option value="emerald">Emerald</option>
-          <option value="green">Green</option>
-          <option value="snow">Snow</option>
-          <option value="carbon">Carbon</option>
-          <option value="orange">Orange</option>
-          <option value="chocolate">Chocolate</option>
-          <option value="cherry">Cherry</option>
-          <option value="red">Red</option>
-          <option value="yellow">Yellow</option>
-          <option value="chalk">Chalk</option>
-        </select>
-      </label>
+    <div id="settings-sections" hidden>
+      <div class="panel" id="settings-miguelium">
+        <h2>Miguelium</h2>
+        <label class="field">Bits para activar
+          <div class="row">
+            <input id="amount-miguelium" type="number" min="1" step="1" style="flex:1" value="100">
+            <button id="btn-save-miguelium" type="button">Guardar</button>
+          </div>
+        </label>
+        <label class="field">Fuente
+          <select id="font-miguelium">
+            <option value="Georgia">Georgia (por defecto)</option>
+            <option value="ComingSoon">Coming Soon</option>
+            <option value="ZPix">ZPix</option>
+          </select>
+        </label>
+        <label class="field">Tamaño de fuente (px)
+          <input id="font-size-miguelium" type="number" min="12" max="72" step="2" value="22">
+        </label>
+        <label class="field">Movimiento al hablar
+          <select id="movement-miguelium">
+            <option value="off">Sin movimiento</option>
+            <option value="swing">Balanceo</option>
+            <option value="bob">Subir y bajar</option>
+          </select>
+        </label>
+        <label class="field">Paleta de colores
+          <select id="palette-miguelium">
+            <option value="default">Por defecto</option>
+            <option value="grape">Grape</option>
+            <option value="sapphire">Sapphire</option>
+            <option value="ocean">Ocean</option>
+            <option value="emerald">Emerald</option>
+            <option value="green">Green</option>
+            <option value="snow">Snow</option>
+            <option value="carbon">Carbon</option>
+            <option value="orange">Orange</option>
+            <option value="chocolate">Chocolate</option>
+            <option value="cherry">Cherry</option>
+            <option value="red">Red</option>
+            <option value="yellow">Yellow</option>
+            <option value="chalk">Chalk</option>
+          </select>
+        </label>
+        <label class="row"><input id="flip-miguelium" type="checkbox"> Voltear horizontal</label>
+        <button id="btn-test-miguelium" type="button">Probar Miguelium</button>
+      </div>
+
+      <div class="panel" id="settings-ms-rowlet">
+        <h2>Ms. Rowlet</h2>
+        <label class="field">Bits para activar
+          <div class="row">
+            <input id="amount-ms-rowlet" type="number" min="1" step="1" style="flex:1" value="100">
+            <button id="btn-save-ms-rowlet" type="button">Guardar</button>
+          </div>
+        </label>
+        <label class="field">Fuente
+          <select id="font-ms-rowlet">
+            <option value="Georgia">Georgia (por defecto)</option>
+            <option value="ComingSoon">Coming Soon</option>
+            <option value="ZPix">ZPix</option>
+          </select>
+        </label>
+        <label class="field">Tamaño de fuente (px)
+          <input id="font-size-ms-rowlet" type="number" min="12" max="72" step="2" value="22">
+        </label>
+        <label class="field">Movimiento al hablar
+          <select id="movement-ms-rowlet">
+            <option value="off">Sin movimiento</option>
+            <option value="swing">Balanceo</option>
+            <option value="bob">Subir y bajar</option>
+          </select>
+        </label>
+        <label class="field">Paleta de colores
+          <select id="palette-ms-rowlet">
+            <option value="default">Por defecto</option>
+            <option value="grape">Grape</option>
+            <option value="sapphire">Sapphire</option>
+            <option value="ocean">Ocean</option>
+            <option value="emerald">Emerald</option>
+            <option value="green">Green</option>
+            <option value="snow">Snow</option>
+            <option value="carbon">Carbon</option>
+            <option value="orange">Orange</option>
+            <option value="chocolate">Chocolate</option>
+            <option value="cherry">Cherry</option>
+            <option value="red">Red</option>
+            <option value="yellow">Yellow</option>
+            <option value="chalk">Chalk</option>
+          </select>
+        </label>
+        <label class="row"><input id="flip-ms-rowlet" type="checkbox"> Voltear horizontal</label>
+        <button id="btn-test-ms-rowlet" type="button">Probar Ms. Rowlet</button>
+      </div>
     </div>
   </div>
 
@@ -173,36 +219,36 @@
 
 <script type="module">
 import {
-  cfg, configured, savedAmount, saveAmount, createBridge,
+  cfg, configured, savedAmount, createBridge,
   savedPreviewMute, savePreviewMute,
 } from './js/bridge.js';
 import { TWITCH_OAUTH_BASE, SUPABASE_KEY } from './js/config.js';
-import { fetchCheerState, saveCheerState } from './js/cloud.js';
+import { fetchCharacterState, saveCharacterState } from './js/cloud.js';
 
 const $ = (id) => document.getElementById(id);
-const AMOUNT_IN = $('amount');
 const DOT_OV = $('dot-ov'), STATUS_OV = $('status-ov');
-const BTN_CONNECT = $('btn-connect'), BTN_COPY_URL = $('btn-copy-url'), BTN_SAVE = $('btn-save');
+const BTN_CONNECT = $('btn-connect'), BTN_COPY_URL = $('btn-copy-url');
 const BTN_LOGOUT = $('btn-logout');
-const BTN_FLIP = $('btn-flip'), BTN_CHARACTER = $('btn-character'), BTN_TEST = $('btn-test'), TEST_OVERLAY = $('test-overlay');
+const TEST_OVERLAY = $('test-overlay');
 const MUTE_PREVIEW = $('mute-preview');
-const FONT_SELECT = $('font-select'), FONT_SIZE_IN = $('font-size'), MOVEMENT_SELECT = $('movement-select'), PALETTE_SELECT = $('palette-select');
+
+// Controles por personaje (id del sufijo: -miguelium / -ms-rowlet).
+function ctrl(character, kind) {
+  return $(kind + '-' + character);
+}
 const PREVIEW = $('preview'), PREVIEW_NOTE = $('preview-note'), EVENTS = $('events'), MSG = $('msg');
 const CONNECTION_PANEL = $('connection-panel'), CONNECTION_CONNECTED = $('connection-connected');
 const CONNECTION_TITLE = $('connection-title'), CONNECTION_STATUS = $('connection-status');
-const SETTINGS_SECTION = $('settings-section');
 
-const DEFAULT_AMOUNT = cfg.amountDefault ?? 100;
+const DEFAULT_AMOUNT = 100;
 const OVERLAY_TTL = 90000;
 
 let broadcasterId = '';
 let broadcasterLogin = '';
-let flip = false;
-let font = localStorage.getItem('mw_font') || 'Georgia';
-let fontSize = Number(localStorage.getItem('mw_fontSize')) || 22;
-let movement = localStorage.getItem('mw_movement') || 'off';
-let palette = localStorage.getItem('mw_palette') || 'default';
-let character = localStorage.getItem('mw_character') || 'miguelium';
+// Ajustes por personaje, fuente de verdad compartida con el overlay.
+let settings = {};
+settings[CHARACTER_MIGUELIUM] = readAllSettings('', CHARACTER_MIGUELIUM);
+settings[CHARACTER_ROWLET] = readAllSettings('', CHARACTER_ROWLET);
 let lastHello = 0;
 let roomActive = false;
 let roomBridge = null;
@@ -210,12 +256,6 @@ let roomGen = 0;
 let flashTimer = null;
 
 function setOverlay(kind, text) { DOT_OV.className = 'dot' + (kind ? ' ' + kind : ''); STATUS_OV.textContent = text; }
-
-function applyCharacterButton() {
-  BTN_CHARACTER.textContent = 'Personaje: ' + (CHARACTER_LABELS[character] || CHARACTER_LABELS.miguelium);
-  BTN_CHARACTER.classList.toggle('on', character === 'rowlet');
-  BTN_CHARACTER.setAttribute('aria-pressed', String(character === 'rowlet'));
-}
 
 function flash(text) {
   MSG.textContent = text;
@@ -227,24 +267,92 @@ function flash(text) {
   }, 5000);
 }
 
-const SETTING_KEYS = ['mw_font', 'mw_fontSize', 'mw_movement', 'mw_palette', 'mw_character'];
-const CHARACTER_LABELS = { miguelium: 'Miguelium', rowlet: 'Ms. Rowlet' };
+const CHARACTER_LABELS = { [CHARACTER_MIGUELIUM]: 'Miguelium', [CHARACTER_ROWLET]: 'Ms. Rowlet' };
+
+// Escribe los ajustes en memoria en los controles del panel.
+function applySettingsToControls() {
+  for (const c of [CHARACTER_MIGUELIUM, CHARACTER_ROWLET]) {
+    const s = settings[c];
+    ctrl(c, 'amount').value = s.amount;
+    ctrl(c, 'font').value = s.font;
+    ctrl(c, 'font-size').value = s.fontSize;
+    ctrl(c, 'movement').value = s.movement;
+    ctrl(c, 'palette').value = s.palette;
+    ctrl(c, 'flip').checked = !!s.flip;
+  }
+}
+
+// Lee los controles de un personaje y los guarda en settings[c].
+function readControlsIntoSettings(c) {
+  const s = settings[c];
+  s.amount = Math.max(1, Math.floor(Number(ctrl(c, 'amount').value) || DEFAULT_AMOUNT));
+  s.font = ctrl(c, 'font').value;
+  s.fontSize = Math.max(12, Math.floor(Number(ctrl(c, 'font-size').value) || 22));
+  s.movement = ctrl(c, 'movement').value;
+  s.palette = ctrl(c, 'palette').value;
+  s.flip = ctrl(c, 'flip').checked;
+  return s;
+}
+
+// Guarda los ajustes de un personaje: valida que los umbrales no coincidan,
+// persiste en localStorage y se lo notifica al overlay.
+function saveCharacterSettings(c) {
+  const s = readControlsIntoSettings(c);
+  const other = c === CHARACTER_MIGUELIUM ? CHARACTER_ROWLET : CHARACTER_MIGUELIUM;
+  if (s.amount === settings[other].amount) {
+    flash('Miguelium y Ms. Rowlet no pueden tener el mismo umbral de bits');
+    applySettingsToControls();
+    return false;
+  }
+  settings[c] = s;
+  saveAllSettings(broadcasterId || '', c, s);
+  applySettingsToControls();
+  if (broadcasterId) {
+    try { await saveCharacterState(broadcasterId, c, s); } catch (e) {
+      console.warn('[dashboard] cloud character state save failed', e?.message ?? e);
+    }
+  }
+  if (roomBridge) roomBridge.sendSet({ character: c, ...s });
+  return true;
+}
+
+function wireCharacterControls(c) {
+  ctrl(c, 'amount').addEventListener('change', () => saveCharacterSettings(c));
+  ctrl(c, 'font').addEventListener('change', () => { saveCharacterSettings(c); });
+  ctrl(c, 'font-size').addEventListener('change', () => { saveCharacterSettings(c); });
+  ctrl(c, 'movement').addEventListener('change', () => { saveCharacterSettings(c); });
+  ctrl(c, 'palette').addEventListener('change', () => { saveCharacterSettings(c); });
+  ctrl(c, 'flip').addEventListener('change', () => { saveCharacterSettings(c); });
+  $('btn-save-' + c).addEventListener('click', () => saveCharacterSettings(c));
+  $('btn-test-' + c).addEventListener('click', () => {
+    readControlsIntoSettings(c);
+    if (roomBridge && roomActive) roomBridge.sendTest(c);
+  });
+}
+
+function wireAllControls() {
+  wireCharacterControls(CHARACTER_MIGUELIUM);
+  wireCharacterControls(CHARACTER_ROWLET);
+}
 
 // Lee siempre de localStorage (fuente de verdad compartida entre pestañas y overlay)
 // para que una variable en memoria desactualizada no resucite un valor viejo.
 function readSettings() {
-  return {
-    font: localStorage.getItem('mw_font') || 'Georgia',
-    fontSize: Number(localStorage.getItem('mw_fontSize')) || 22,
-    movement: localStorage.getItem('mw_movement') || 'off',
-    palette: localStorage.getItem('mw_palette') || 'default',
-    character: localStorage.getItem('mw_character') || 'miguelium',
-  };
+  const out = {};
+  for (const c of [CHARACTER_MIGUELIUM, CHARACTER_ROWLET]) {
+    out[c] = readAllSettings('', c);
+    if (out[c].amount <= 0) out[c].amount = defaultAmountFor('', c);
+  }
+  return out;
 }
 
 function broadcastSettings() {
   if (!roomBridge) return;
-  roomBridge.sendSet({ amount: savedAmount(broadcasterId, DEFAULT_AMOUNT), ...readSettings() });
+  const next = readSettings();
+  settings[CHARACTER_MIGUELIUM] = next[CHARACTER_MIGUELIUM];
+  settings[CHARACTER_ROWLET] = next[CHARACTER_ROWLET];
+  roomBridge.sendSet({ character: CHARACTER_MIGUELIUM, ...next[CHARACTER_MIGUELIUM] });
+  roomBridge.sendSet({ character: CHARACTER_ROWLET, ...next[CHARACTER_ROWLET] });
 }
 
 function showConnected(connected) {
@@ -256,7 +364,8 @@ function showConnected(connected) {
   if (CONNECTION_STATUS) {
     CONNECTION_STATUS.textContent = connected ? ('Conectado: ' + broadcasterLogin) : '';
   }
-  if (SETTINGS_SECTION) SETTINGS_SECTION.hidden = !connected;
+  const SETTINGS_WRAPPER = $('settings-sections');
+  if (SETTINGS_WRAPPER) SETTINGS_WRAPPER.hidden = !connected;
   setOverlay(connected ? 'live' : '', connected ? ('Canal: ' + broadcasterLogin) : 'Sin canal');
 }
 
@@ -284,13 +393,14 @@ function updatePreview() {
   }
 }
 
-function logEvent(user, bits) {
-  const active = savedAmount(broadcasterId, DEFAULT_AMOUNT);
+function logEvent(user, bits, character) {
+  const label = character ? ('[' + (CHARACTER_LABELS[character] || character) + '] ') : '';
+  const active = settings[character] ? settings[character].amount : savedAmount(broadcasterId, DEFAULT_AMOUNT);
   const ok = bits === active;
   if (EVENTS.querySelector('.empty')) EVENTS.textContent = '';
   const li = document.createElement('li');
   li.className = ok ? 'ok' : '';
-  li.textContent = (ok ? '✔ ' : '✘ ') + user + ' · ' + bits + ' bits' + (ok ? ' — redimido' : ' — ignorado (no es ' + active + ')');
+  li.textContent = (ok ? '✔ ' : '✘ ') + label + user + ' · ' + bits + ' bits' + (ok ? ' — redimido' : ' — ignorado');
   EVENTS.prepend(li);
   while (EVENTS.children.length > 5) EVENTS.lastChild.remove();
 }
@@ -330,13 +440,12 @@ async function startRoom() {
       setOverlay('live', 'Overlay conectado');
       broadcastSettings();
     });
-    roomBridge.onCheer(({ user, bits }) => logEvent(user, bits));
+    roomBridge.onCheer(({ user, bits, character }) => logEvent(user, bits, character));
     await roomBridge.connect();
     if (gen !== roomGen) return;
     roomActive = true;
     lastHello = Date.now();
     roomBridge.sendPing();
-    roomBridge.sendSet(savedAmount(broadcasterId, DEFAULT_AMOUNT));
   } catch (e) {
     if (gen !== roomGen) return;
     const m = (e && e.message) || '';
@@ -357,22 +466,6 @@ if (BTN_CONNECT) {
     location.href = authUrl;
   });
 }
-
-BTN_SAVE.addEventListener('click', async () => {
-  if (!broadcasterId) { flash('Conecta tu cuenta de Twitch primero'); return; }
-  const v = Math.max(1, Math.floor(Number(AMOUNT_IN.value) || DEFAULT_AMOUNT));
-  AMOUNT_IN.value = String(v);
-  saveAmount(broadcasterId, v);
-  if (roomBridge) roomBridge.sendSet({ amount: v, ...readSettings() });
-  try {
-    await saveCheerState(broadcasterId, v);
-  } catch (e) {
-    console.warn('[dashboard] cloud cheer state save failed', e?.message ?? e);
-    flash('Monto guardado localmente; la nube fallo', 'err');
-    return;
-  }
-  flash('Monto guardado: ' + v + ' bits');
-});
 
 BTN_COPY_URL.addEventListener('click', async () => {
   if (!broadcasterId) { flash('Conecta tu cuenta de Twitch primero'); return; }
@@ -419,75 +512,37 @@ if (BTN_LOGOUT) {
     broadcasterLogin = '';
     showConnected(false);
     BTN_CONNECT.hidden = false;
-    AMOUNT_IN.value = String(DEFAULT_AMOUNT);
-    saveAmount('', DEFAULT_AMOUNT);
     flash('Sesión cerrada');
   });
 }
 
-BTN_FLIP.addEventListener('click', () => {
-  flip = !flip;
-  BTN_FLIP.classList.toggle('on', flip);
-  BTN_FLIP.setAttribute('aria-pressed', String(flip));
-  if (roomBridge) roomBridge.sendFlip(flip);
-});
+// Inicializa controles con los ajustes guardados y los sincroniza con el
+// overlay cuando hay sala activa.
+applySettingsToControls();
+wireAllControls();
+if (roomBridge && roomActive) broadcastSettings();
 
-BTN_CHARACTER.addEventListener('click', () => {
-  character = character === 'rowlet' ? 'miguelium' : 'rowlet';
-  localStorage.setItem('mw_character', character);
-  applyCharacterButton();
-  broadcastSettings();
-});
-
-BTN_TEST.addEventListener('click', () => {
-  if (TEST_OVERLAY.checked && roomBridge && roomActive) {
-    roomBridge.sendTest();
-    return;
-  }
-  const win = PREVIEW.contentWindow;
-  if (win) win.postMessage({ type: 'test' }, '*');
-});
-
-// Live style/font updates to overlay via bridge
-FONT_SELECT.addEventListener('change', () => {
-  font = FONT_SELECT.value;
-  localStorage.setItem('mw_font', font);
-  broadcastSettings();
-});
-FONT_SIZE_IN.addEventListener('input', () => {
-  fontSize = Number(FONT_SIZE_IN.value) || 22;
-  localStorage.setItem('mw_fontSize', fontSize);
-  broadcastSettings();
-});
-
-MOVEMENT_SELECT.addEventListener('change', () => {
-  movement = MOVEMENT_SELECT.value;
-  localStorage.setItem('mw_movement', movement);
-  broadcastSettings();
-});
-
-PALETTE_SELECT.addEventListener('change', () => {
-  palette = PALETTE_SELECT.value;
-  localStorage.setItem('mw_palette', palette);
-  broadcastSettings();
-});
-
-// Otra pestaña del panel cambio un ajuste: sincroniza variables y controles
-// para que esta pestaña no vuelva a difundir el valor viejo.
+// Otra pestaña del panel cambio un ajuste de un personaje: sincroniza la
+// memoria y los controles de esta pestaña para no difundir valores viejos.
 window.addEventListener('storage', (e) => {
-  if (!SETTING_KEYS.includes(e.key)) return;
+  if (!e.key) return;
+  // mwchar_<broadcaster>_<character>_<setting>
+  const m = /^mwchar__(?:(.+)__)?(miguelium|ms-rowlet)_(amount|font|fontSize|movement|palette|flip)$/.exec(e.key);
+  if (!m) return;
   const s = readSettings();
-  font = s.font;
-  fontSize = s.fontSize;
-  movement = s.movement;
-  palette = s.palette;
-  character = s.character;
-  applyCharacterButton();
+  settings[CHARACTER_MIGUELIUM] = s[CHARACTER_MIGUELIUM];
+  settings[CHARACTER_ROWLET] = s[CHARACTER_ROWLET];
+  applySettingsToControls();
   // No tocar el control que el usuario esta editando ahora mismo.
-  if (document.activeElement !== FONT_SELECT) FONT_SELECT.value = font;
-  if (document.activeElement !== FONT_SIZE_IN) FONT_SIZE_IN.value = String(fontSize);
-  if (document.activeElement !== MOVEMENT_SELECT) MOVEMENT_SELECT.value = movement;
-  if (document.activeElement !== PALETTE_SELECT) PALETTE_SELECT.value = palette;
+  for (const c of [CHARACTER_MIGUELIUM, CHARACTER_ROWLET]) {
+    if (document.activeElement === ctrl(c, 'amount')) continue;
+    if (document.activeElement === ctrl(c, 'font')) continue;
+    if (document.activeElement === ctrl(c, 'font-size')) continue;
+    if (document.activeElement === ctrl(c, 'movement')) continue;
+    if (document.activeElement === ctrl(c, 'palette')) continue;
+    if (document.activeElement === ctrl(c, 'flip')) continue;
+  }
+  if (roomBridge && roomActive) broadcastSettings();
 });
 
 // Mute del preview: el panel guarda el estado y el overlay solo obedece.
@@ -496,8 +551,6 @@ function sendMute() {
   const win = PREVIEW.contentWindow;
   if (win) win.postMessage({ type: 'mute', value: MUTE_PREVIEW.checked }, '*');
 }
-
-applyCharacterButton();
 
 MUTE_PREVIEW.checked = savedPreviewMute();
 MUTE_PREVIEW.addEventListener('change', () => {
@@ -511,6 +564,29 @@ setInterval(() => {
 }, 5000);
 
 // ---- Inicio: manejar callback de OAuth o restaurar sesion ----
+// Carga los ajustes por personaje de la nube y los combina con lo local.
+async function loadCloudSettings(broadcasterId) {
+  const rows = await fetchCharacterState(broadcasterId);
+  if (!rows || !Array.isArray(rows)) return;
+  const cloud = {};
+  for (const row of rows) cloud[row.character] = row;
+  let changed = false;
+  for (const c of [CHARACTER_MIGUELIUM, CHARACTER_ROWLET]) {
+    const cs = cloud[c];
+    if (cs && Number.isFinite(cs.amount) && cs.amount > 0) {
+      settings[c].amount = Math.floor(cs.amount);
+      if (cs.font) settings[c].font = cs.font;
+      if (cs.fontSize) settings[c].fontSize = Number(cs.fontSize);
+      if (cs.movement) settings[c].movement = cs.movement;
+      if (cs.palette) settings[c].palette = cs.palette;
+      if (typeof cs.flip === 'boolean') settings[c].flip = cs.flip;
+      changed = true;
+      saveAllSettings(broadcasterId || '', c, settings[c]);
+    }
+  }
+  if (changed) applySettingsToControls();
+}
+
 async function init() {
   const urlParams = new URLSearchParams(location.search);
   const connected = urlParams.get('connected');
@@ -528,21 +604,9 @@ async function init() {
     localStorage.setItem('mw_broadcaster_id', broadcasterId);
     localStorage.setItem('mw_broadcaster_login', broadcasterLogin);
     showConnected(true);
-    FONT_SELECT.value = font;
-    FONT_SIZE_IN.value = String(fontSize);
-    MOVEMENT_SELECT.value = movement;
-    PALETTE_SELECT.value = palette;
-    try {
-      const cloud = await fetchCheerState(broadcasterId);
-      if (cloud && cloud.cheer_threshold !== undefined) {
-        AMOUNT_IN.value = String(cloud.cheer_threshold);
-        saveAmount(broadcasterId, cloud.cheer_threshold);
-      } else {
-        AMOUNT_IN.value = String(savedAmount(broadcasterId, DEFAULT_AMOUNT));
-      }
-    } catch (e) {
-      console.warn('[dashboard] cloud cheer state unavailable', e?.message ?? e);
-      AMOUNT_IN.value = String(savedAmount(broadcasterId, DEFAULT_AMOUNT));
+    applySettingsToControls();
+    try { await loadCloudSettings(broadcasterId); } catch (e) {
+      console.warn('[dashboard] cloud character state unavailable', e?.message ?? e);
     }
     startRoom();
     updatePreview();
@@ -557,21 +621,9 @@ async function init() {
     broadcasterId = savedId;
     broadcasterLogin = savedLogin || '';
     showConnected(true);
-    FONT_SELECT.value = font;
-    FONT_SIZE_IN.value = String(fontSize);
-    MOVEMENT_SELECT.value = movement;
-    PALETTE_SELECT.value = palette;
-    try {
-      const cloud = await fetchCheerState(broadcasterId);
-      if (cloud && cloud.cheer_threshold !== undefined) {
-        AMOUNT_IN.value = String(cloud.cheer_threshold);
-        saveAmount(broadcasterId, cloud.cheer_threshold);
-      } else {
-        AMOUNT_IN.value = String(savedAmount(broadcasterId, DEFAULT_AMOUNT));
-      }
-    } catch (e) {
-      console.warn('[dashboard] cloud cheer state unavailable', e?.message ?? e);
-      AMOUNT_IN.value = String(savedAmount(broadcasterId, DEFAULT_AMOUNT));
+    applySettingsToControls();
+    try { await loadCloudSettings(broadcasterId); } catch (e) {
+      console.warn('[dashboard] cloud character state unavailable', e?.message ?? e);
     }
   }
 

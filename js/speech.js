@@ -20,7 +20,7 @@ export function perCharMs(durationMs, charCount) {
 // del audio; si rechaza o no contesta en graceMs, al ritmo fijo tipico.
 // onPace se dispara una sola vez y cancel() silencia respuestas tardias,
 // para que una frase vieja nunca arranque un typewriter de la nueva.
-export function schedulePacing({ text, speak, fallbackPerChar, graceMs, onPace }) {
+export function schedulePacing({ text, speak, fallbackPerChar, graceMs, onPace, character }) {
   let settled = false;
   const fire = (perChar) => {
     if (settled) return;
@@ -30,6 +30,7 @@ export function schedulePacing({ text, speak, fallbackPerChar, graceMs, onPace }
   };
   const grace = setTimeout(() => fire(fallbackPerChar), graceMs);
   speak(text, {
+    character,
     onDuration: (ms) => fire(perCharMs(ms, text.length)),
     isCancelled: () => settled,
   }).catch(() => fire(fallbackPerChar));

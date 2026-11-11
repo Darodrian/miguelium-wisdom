@@ -35,8 +35,21 @@ const SAFE = {
   punctuationDelay: RANGES.punctuationDelay.map((n) => clamp(n, 0, 10)),
 };
 
-export function drawVoice() {
-  const pitch = draw(SAFE.pitch);
+// Miguelium suena grave, ms-rowlet aguda. Cada uno dibuja dentro de su
+// propia banda de tono para que nunca se confundan, aun con el azar.
+const VOICE_PITCH_BY_CHARACTER = {
+  miguelium: [0.6, 1.1],
+  'ms-rowlet': [2.4, 3.4],
+};
+
+function pitchSafeFor(character) {
+  const band = VOICE_PITCH_BY_CHARACTER[character];
+  if (!band) return SAFE.pitch;
+  return [clamp(band[0], PITCH_FLOOR, PITCH_CEIL), clamp(band[1], PITCH_FLOOR, PITCH_CEIL)];
+}
+
+export function drawVoice(character) {
+  const pitch = draw(pitchSafeFor(character));
   const speed = draw(SAFE.speed);
 
   return {

@@ -127,7 +127,7 @@ async function speakNow(message, { onDuration, isCancelled } = {}) {
   if (!player.sampleRate && spriteRate) player.sampleRate = spriteRate;
   addPlaybackTarget(player.audioContext);
 
-  const voice = drawVoice();
+  const voice = drawVoice(opts && opts.character);
   voiceChain.setVoice(voice);
 
   const cfg = engine.config;
@@ -163,6 +163,11 @@ export function speak(message, opts) {
   const run = chain.then(() => speakNow(message, opts));
   chain = run.catch(() => {});
   return run;
+}
+
+// Perfil de voz por personaje: miguelium grave, ms-rowlet aguda.
+export function drawVoiceFor(character) {
+  return drawVoice(character);
 }
 
 let probe = null;

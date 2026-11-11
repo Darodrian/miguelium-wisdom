@@ -97,12 +97,16 @@
 
 <script type="module">
 import {
-  cfg, configured, savedAmount, saveAmount, createBridge,
+  cfg, configured, saveAmount, createBridge,
 } from './js/bridge.js';
 import { getAccessToken, EventSubClient } from './js/twitch.js';
-import { fetchCheerState } from './js/cloud.js';
+import { fetchCheerState, fetchCharacterState } from './js/cloud.js';
 import { speak, loadEngine, unlockAudio, setMuted } from './js/tts.js';
 import { forSpeech, schedulePacing } from './js/speech.js';
+import {
+  CHARACTER_MIGUELIUM, CHARACTER_ROWLET, CHARACTERS,
+  readAllSettings, saveAllSettings, defaultAmountFor, migrateLegacyCharacter, isValidCharacter,
+} from './js/characters.js';
 
 const BROADCASTER_ID = (() => {
   try { return new URLSearchParams(location.search).get('broadcaster_id') || ''; } catch { return ''; }
@@ -125,46 +129,80 @@ const textEl = $('text');
 const bubbleEl = $('bubble');
 const migEl = $('img-mig');
 
-let amount = savedAmount(BROADCASTER_ID, cfg.amountDefault ?? 100);
-let font = localStorage.getItem('mw_font') || 'Georgia';
-let fontSize = Number(localStorage.getItem('mw_fontSize')) || 22;
-let movement = localStorage.getItem('mw_movement') || 'off';
-let palette = localStorage.getItem('mw_palette') || 'default';
-let character = localStorage.getItem('mw_character') || 'miguelium';
-
-const CHARACTERS = {
-  miguelium: { src: 'assets/miguelium.png', alt: 'Miguelium' },
-  rowlet: { src: 'assets/ms-rowlet.png', alt: 'Ms. Rowlet' },
-};
-
-function applyFont() {
-  textEl.style.fontFamily = font;
-  textEl.style.fontSize = fontSize + 'px';
+// Cada personaje tiene su propio umbral, apariencia y voz.
+migrateLegacyCharacter(BROADCASTER_ID);
+const settings = {};
+for (const c of [CHARACTER_MIGUELIUM, CHARACTER_ROWLET]) {
+  settings[c] = readAllSettings(BROADCASTER_ID, c);
+  if (settings[c].amount === undefined || settings[c].amount <= 0) {
+    settings[c].amount = defaultAmountFor(BROADCASTER_ID, c);
+  }
 }
 
-function applyStyle() {
+let phrases = [];
+// Historial de índices de frases recientes por personaje (no repeticiones cercanas).
+const recentIndices = {};
+for (const c of [CHARACTER_MIGUELIUM, CHARACTER_ROWLET]) recentIndices[c] = [];
+
+let showing = false;
+let hideTimer = null;
+let typeTimer = null;
+let paceCancel = null;
+let helloTimer = null;
+const queue = [];
+
+function applyFontFor(character) {
+  const s = settings[character] || settings[CHARACTER_MIGUELIUM];
+  textEl.style.fontFamily = s.font;
+  textEl.style.fontSize = s.fontSize + 'px';
+}
+
+function applyStyleFor(character) {
+  const s = settings[character] || settings[CHARACTER_MIGUELIUM];
   bubbleEl.classList.remove('style-default', 'style-grape', 'style-sapphire', 'style-ocean', 'style-emerald', 'style-green', 'style-snow', 'style-carbon', 'style-orange', 'style-chocolate', 'style-cherry', 'style-red', 'style-yellow', 'style-chalk');
-  bubbleEl.classList.add('style-' + palette);
+  bubbleEl.classList.add('style-' + s.palette);
 }
 
-function applyMovement() {
+function applyMovementFor(character) {
+  const s = settings[character] || settings[CHARACTER_MIGUELIUM];
   actor.classList.remove('movement-off', 'movement-swing', 'movement-bob');
-  actor.classList.add('movement-' + movement);
+  actor.classList.add('movement-' + s.movement);
 }
 
-function applyCharacter() {
-  const c = CHARACTERS[character] || CHARACTERS.miguelium;
+function applyCharacterFor(character) {
+  const c = CHARACTERS[character] || CHARACTERS[CHARACTER_MIGUELIUM];
   migEl.src = c.src;
   migEl.alt = c.alt;
 }
 
+function applyFlipFor(character) {
+  const s = settings[character] || settings[CHARACTER_MIGUELIUM];
+  migEl.classList.toggle('flip', s.flip);
+}
+
 async function loadCheerThreshold() {
   if (!BROADCASTER_ID) return;
+  // Nombrado: la tabla propia de sabiduria por personaje tiene prioridad.
+  try {
+    const rows = await fetchCharacterState(BROADCASTER_ID);
+    if (rows && Array.isArray(rows) && rows.length) {
+      for (const row of rows) {
+        if (row.character && Number.isFinite(row.amount) && row.amount > 0) {
+          settings[row.character].amount = Math.floor(row.amount);
+        }
+      }
+      return;
+    }
+  } catch (e) {
+    console.warn('[overlay] tabla de personajes no disponible aun', (e && e.message) || e);
+  }
+  // Fallback al umbral unico legado (solo miguelium) mientras no se migre.
   try {
     const cloud = await fetchCheerState(BROADCASTER_ID);
     if (cloud && Number.isFinite(cloud.cheer_threshold) && cloud.cheer_threshold > 0) {
-      amount = Math.floor(cloud.cheer_threshold);
-      saveAmount(BROADCASTER_ID, amount);
+      const n = Math.floor(cloud.cheer_threshold);
+      settings[CHARACTER_MIGUELIUM].amount = n;
+      saveAmount(BROADCASTER_ID, n);
     }
   } catch (e) {
     console.warn('[overlay] cloud cheer state unavailable, using localStorage', (e && e.message) || e);
@@ -174,15 +212,9 @@ async function loadCheerThreshold() {
 // Se guarda la promesa para que el primer cheer espere el umbral de la nube
 // en vez de compararlo contra el valor por defecto de localStorage.
 const cheerThresholdReady = loadCheerThreshold();
-applyFont();
-applyStyle();
-applyMovement();
-applyCharacter();
-let flip = false;
 let phrases = [];
 // Historial de índices de frases recientes para evitar repeticiones cercanas.
 const HISTORY_SIZE = 20;
-let recentIndices = [];
 let showing = false;
 let hideTimer = null;
 let typeTimer = null;
@@ -195,38 +227,46 @@ async function loadPhrases() {
     const res = await fetch('refranes.json');
     if (res.ok) {
       const data = await res.json();
-      if (Array.isArray(data)) {
-        phrases = data.filter((s) => typeof s === 'string' && s.trim()).map((s) => s.trim());
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        phrases = {};
+        for (const c of [CHARACTER_MIGUELIUM, CHARACTER_ROWLET]) {
+          const arr = data[c];
+          if (Array.isArray(arr)) {
+            phrases[c] = arr.filter((s) => typeof s === 'string' && s.trim()).map((s) => s.trim());
+          } else {
+            phrases[c] = [];
+          }
+        }
       }
     }
   } catch (e) { /* sin lista */ }
 }
 
-function pickPhrase() {
-  if (!phrases.length) return '...';
-  if (phrases.length === 1) return phrases[0];
+function pickPhrase(character) {
+  const list = phrases[character];
+  if (!list || !list.length) return '...';
+  if (list.length === 1) return list[0];
 
-  // Intenta hasta phrases.length veces encontrar un índice no reciente.
+  const recent = recentIndices[character] || [];
+
+  // Intenta hasta list.length veces encontrar un índice no reciente.
   let i;
-  for (let attempt = 0; attempt < phrases.length; attempt++) {
-    i = Math.floor(Math.random() * phrases.length);
-    if (!recentIndices.includes(i)) break;
+  for (let attempt = 0; attempt < list.length; attempt++) {
+    i = Math.floor(Math.random() * list.length);
+    if (!recent.includes(i)) break;
   }
 
-  recentIndices.push(i);
-  if (recentIndices.length > HISTORY_SIZE) {
-    recentIndices.shift();
+  recent.push(i);
+  if (recent.length > HISTORY_SIZE) {
+    recent.shift();
   }
-  return phrases[i];
+  recentIndices[character] = recent;
+  return list[i];
 }
 
-function applyFlip() {
-  migEl.classList.toggle('flip', flip);
-}
-
-function enqueue() {
-  console.log('[overlay] enqueue called, queue length before:', queue.length);
-  queue.push({ phrase: pickPhrase() });
+function enqueue(character) {
+  console.log('[overlay] enqueue called, character:', character, 'queue length before:', queue.length);
+  queue.push({ character, phrase: pickPhrase(character) });
   next();
 }
 
@@ -238,7 +278,7 @@ function next() {
   }
   showing = true;
   const job = queue.shift();
-  console.log('[overlay] next shifting job, phrase:', job.phrase);
+  console.log('[overlay] next shifting job, character:', job.character, 'phrase:', job.phrase);
   show(job);
 }
 
@@ -249,9 +289,16 @@ function stopFx() {
 }
 
 function show(job) {
-  console.log('[overlay] show called, phrase:', job.phrase);
+  console.log('[overlay] show called, character:', job.character, 'phrase:', job.phrase);
   stopFx();
   textEl.textContent = '';
+
+  // Aplica el aspecto propio del personaje antes de entrar.
+  applyCharacterFor(job.character);
+  applyFontFor(job.character);
+  applyStyleFor(job.character);
+  applyMovementFor(job.character);
+  applyFlipFor(job.character);
 
   actor.classList.remove('out');
   // Fuerza un repintado para que la transicion de entrada siempre se vea.
@@ -278,14 +325,15 @@ function show(job) {
     }, perChar);
   };
 
-  // El globo se escribe al ritmo del audio; si la voz falla o no contesta,
-  // cae al ritmo fijo TYPE_MS y el overlay sigue funcionando sin sonido.
+  // El globo se escribe al ritmo del audio del personaje; si la voz falla o
+  // no contesta, cae al ritmo fijo TYPE_MS y el overlay sigue funcionando sin sonido.
   paceCancel = schedulePacing({
     text: forSpeech(job.phrase),
-    speak,
+    speak: (text, opts) => speak(text, { ...opts, character: job.character }),
     fallbackPerChar: TYPE_MS,
     graceMs: VOICE_GRACE_MS,
     onPace: startTyping,
+    character: job.character,
   });
 }
 
@@ -305,9 +353,14 @@ async function startEventSub() {
         eventSub = new EventSubClient(BROADCASTER_ID, async (event) => {
           await cheerThresholdReady;
           const bits = Number(event && event.bits);
-          if (Number.isFinite(bits) && bits === amount) {
-            enqueue();
-            bridge.sendCheer({ user: event && event.user_name, bits });
+          let matched = null;
+          if (Number.isFinite(bits) && bits > 0) {
+            if (bits === settings[CHARACTER_MIGUELIUM].amount) matched = CHARACTER_MIGUELIUM;
+            else if (bits === settings[CHARACTER_ROWLET].amount) matched = CHARACTER_ROWLET;
+          }
+          if (matched) {
+            enqueue(matched);
+            bridge.sendCheer({ user: event && event.user_name, bits, character: matched });
           }
         }, () => {
           showAffiliateRequired();
@@ -344,22 +397,45 @@ function showAffiliateRequired() {
 
 if (configured() && BROADCASTER_ID) {
   bridge = createBridge(BROADCASTER_ID);
-  bridge.onSet((p) => {
+  function applyIncomingSet(p) {
+    const character = p && isValidCharacter(p.character) ? p.character : CHARACTER_MIGUELIUM;
+    const nextSettings = { ...settings[character] };
+    let changed = false;
+
     const n = Number(p && p.amount);
     if (Number.isFinite(n) && n > 0) {
-      amount = Math.floor(n);
-      saveAmount(BROADCASTER_ID, amount);
+      nextSettings.amount = Math.floor(n);
+      saveAmount(BROADCASTER_ID, nextSettings.amount);
+      changed = true;
     }
-    if (p && p.font) { font = p.font; localStorage.setItem('mw_font', font); applyFont(); }
-    if (p && p.fontSize) { fontSize = Number(p.fontSize); localStorage.setItem('mw_fontSize', fontSize); applyFont(); }
-    if (p && p.movement) { movement = p.movement; localStorage.setItem('mw_movement', movement); applyMovement(); }
-    if (p && p.palette) { palette = p.palette; localStorage.setItem('mw_palette', palette); applyStyle(); }
-    if (p && p.character) { character = p.character; localStorage.setItem('mw_character', character); applyCharacter(); }
-  });
+    if (p && p.font !== undefined) { nextSettings.font = p.font; changed = true; }
+    if (p && p.fontSize !== undefined) { nextSettings.fontSize = Number(p.fontSize) || nextSettings.fontSize; changed = true; }
+    if (p && p.movement !== undefined) { nextSettings.movement = p.movement; changed = true; }
+    if (p && p.palette !== undefined) { nextSettings.palette = p.palette; changed = true; }
+    if (p && typeof p.flip === 'boolean') { nextSettings.flip = !!p.flip; changed = true; }
+
+    if (changed) {
+      settings[character] = nextSettings;
+      saveAllSettings(BROADCASTER_ID, character, nextSettings);
+      // Si este personaje es el que esta en escena, refresca su aspecto al instante.
+      // (solo uno muestra a la vez, asi que no hay conflicto)
+      if (document.getElementById('img-mig').src.includes(CHARACTERS[character].src)) {
+        applyFontFor(character);
+        applyStyleFor(character);
+        applyMovementFor(character);
+        applyFlipFor(character);
+      }
+    }
+  }
+
+  bridge.onSet((p) => applyIncomingSet(p));
   bridge.onFlip((p) => {
     if (p && typeof p.flip === 'boolean') {
-      flip = p.flip;
-      applyFlip();
+      const character = isValidCharacter(p.character) ? p.character : CHARACTER_MIGUELIUM;
+      const next = { ...settings[character], flip: !!p.flip };
+      settings[character] = next;
+      saveAllSettings(BROADCASTER_ID, character, next);
+      applyFlipFor(character);
     }
   });
   bridge.onDisconnect(() => {
@@ -378,10 +454,16 @@ if (configured() && BROADCASTER_ID) {
     }, FADE_MS);
     document.title = 'Miguelium Wisdom · Desconectado';
   });
-  bridge.onTest(() => enqueue());
+  bridge.onTest((p) => {
+    const character = p && isValidCharacter(p.character) ? p.character : CHARACTER_MIGUELIUM;
+    enqueue(character);
+  });
   // El preview refleja los cheers que detecta el overlay real y los publica
   // en la sala; asi se ve igual sin abrir una segunda suscripcion de EventSub.
-  if (PREVIEW_MODE) bridge.onCheer(() => enqueue());
+  if (PREVIEW_MODE) bridge.onCheer((p) => {
+    const character = p && isValidCharacter(p.character) ? p.character : CHARACTER_MIGUELIUM;
+    enqueue(character);
+  });
   bridge.onPing(() => {
     bridge.sendHello();
     // El panel volvio a la sala (p.ej. tras Desconectar): reactivar EventSub
@@ -407,8 +489,10 @@ if (configured() && BROADCASTER_ID) {
 window.addEventListener('message', (ev) => {
   if (ev.origin !== location.origin) return;
   const d = ev.data;
-  if (d && d.type === 'test') enqueue();
-  else if (d && d.type === 'mute') setMuted(!!d.value);
+  if (d && d.type === 'test') {
+    const character = d && isValidCharacter(d.character) ? d.character : CHARACTER_MIGUELIUM;
+    enqueue(character);
+  } else if (d && d.type === 'mute') setMuted(!!d.value);
 });
 
 unlockAudio();

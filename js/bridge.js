@@ -110,7 +110,7 @@ export function createBridge(room) {
       }
     },
     sendFlip(flip) { send('flip', { flip: !!flip }); },
-    sendTest() { send('test', { at: Date.now() }); },
+    sendTest(character) { send('test', { at: Date.now(), character }); },
     sendCheer(payload) { send('cheer', payload); },
     sendDisconnect() { send('disconnect', { at: Date.now() }); },
     onStatus(fn) { handlers.status.push(fn); },

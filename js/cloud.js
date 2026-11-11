@@ -50,3 +50,21 @@ export function saveCheerState(broadcasterId, cheerThreshold) {
         p_cheer_threshold: cheerThreshold,
     });
 }
+
+// Ajustes por personaje de miguelium-wisdom (tabla propia, no toca a goal-overlay).
+export function fetchCharacterState(broadcasterId) {
+    return rpc('wisdom_characters_get', { p_broadcaster_id: broadcasterId });
+}
+
+export function saveCharacterState(broadcasterId, character, s) {
+    return rpc('wisdom_characters_save', {
+        p_broadcaster_id: broadcasterId,
+        p_character: character,
+        p_amount: s.amount,
+        p_font: s.font,
+        p_font_size: s.fontSize,
+        p_movement: s.movement,
+        p_palette: s.palette,
+        p_flip: !!s.flip,
+    });
+}

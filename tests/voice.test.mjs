@@ -32,3 +32,23 @@ test('drawVoice rounds every numeric to 3 decimals', () => {
     assert.ok(decimals <= 3, `${key}=${v[key]} has more than 3 decimals`);
   }
 });
+
+test('drawVoice(miguelium) stays in the deep band', () => {
+  for (let i = 0; i < 300; i += 1) {
+    const v = drawVoice('miguelium');
+    assert.ok(v.pitch >= 0.6 && v.pitch <= 1.1, `miguelium pitch ${v.pitch} outside deep band`);
+  }
+});
+
+test('drawVoice(ms-rowlet) stays in the high band', () => {
+  for (let i = 0; i < 300; i += 1) {
+    const v = drawVoice('ms-rowlet');
+    assert.ok(v.pitch >= 2.4 && v.pitch <= 3.4, `ms-rowlet pitch ${v.pitch} outside high band`);
+  }
+});
+
+test('drawVoice bands never overlap between characters', () => {
+  const mig = Array.from({ length: 200 }, () => drawVoice('miguelium').pitch);
+  const row = Array.from({ length: 200 }, () => drawVoice('ms-rowlet').pitch);
+  assert.ok(Math.max(...mig) < Math.min(...row), 'miguelium should never reach ms-rowlet pitches');
+});

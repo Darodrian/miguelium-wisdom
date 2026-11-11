@@ -16,7 +16,9 @@ test('forSpeech turns ¿ and ¡ into ? and ! and keeps the length', () => {
 test('forSpeech keeps the length of every phrase in refranes.json', async () => {
   const { readFile } = await import('node:fs/promises');
   const refranes = JSON.parse(await readFile(new URL('../refranes.json', import.meta.url), 'utf8'));
-  for (const r of refranes) assert.equal(forSpeech(r).length, r.length, r);
+  for (const character of Object.keys(refranes)) {
+    for (const r of refranes[character]) assert.equal(forSpeech(r).length, r.length, character + ' › ' + r);
+  }
 });
 
 test('perCharMs divides the duration by the character count', () => {
