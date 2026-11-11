@@ -223,6 +223,10 @@ import {
   savedPreviewMute, savePreviewMute,
 } from './js/bridge.js';
 import { TWITCH_OAUTH_BASE, SUPABASE_KEY } from './js/config.js';
+import {
+  CHARACTER_MIGUELIUM, CHARACTER_ROWLET,
+  readAllSettings, saveAllSettings, defaultAmountFor,
+} from './js/characters.js';
 import { fetchCharacterState, saveCharacterState } from './js/cloud.js';
 
 const $ = (id) => document.getElementById(id);
@@ -296,7 +300,7 @@ function readControlsIntoSettings(c) {
 
 // Guarda los ajustes de un personaje: valida que los umbrales no coincidan,
 // persiste en localStorage y se lo notifica al overlay.
-function saveCharacterSettings(c) {
+async function saveCharacterSettings(c) {
   const s = readControlsIntoSettings(c);
   const other = c === CHARACTER_MIGUELIUM ? CHARACTER_ROWLET : CHARACTER_MIGUELIUM;
   if (s.amount === settings[other].amount) {
@@ -527,7 +531,7 @@ if (roomBridge && roomActive) broadcastSettings();
 window.addEventListener('storage', (e) => {
   if (!e.key) return;
   // mwchar_<broadcaster>_<character>_<setting>
-  const m = /^mwchar__(?:(.+)__)?(miguelium|ms-rowlet)_(amount|font|fontSize|movement|palette|flip)$/.exec(e.key);
+  const m = /^mwchar_(?:(.+)_)?(miguelium|ms-rowlet)_(amount|font|fontSize|movement|palette|flip)$/.exec(e.key);
   if (!m) return;
   const s = readSettings();
   settings[CHARACTER_MIGUELIUM] = s[CHARACTER_MIGUELIUM];
