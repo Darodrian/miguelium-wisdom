@@ -191,7 +191,6 @@ export async function unlockAudio({ attempts = 40, intervalMs = 250 } = {}) {
 
   clearInterval(unlockTimer);
   unlockTimer = null;
-  unlockAttempts = attempts;
 
   // Limpia el intervalo y los gestos: nada queda colgado cuando ya hay audio.
   const cleanup = () => {
@@ -216,16 +215,6 @@ export async function unlockAudio({ attempts = 40, intervalMs = 250 } = {}) {
   const onGesture = () => { nudge(); };
   window.addEventListener('pointerdown', onGesture, { passive: true });
   window.addEventListener('keydown', onGesture);
-
-  if (await nudge()) return probe.state;
-
-  // El intervalo solo acelera los primeros reintentos; los gestos se quedan
-  // hasta destrabar, para que un clic tardio (preview) siga valiendo.
-  unlockTimer = setInterval(() => {
-    unlockAttempts -= 1;
-    nudge();
-    if (unlockAttempts <= 0) { clearInterval(unlockTimer); unlockTimer = null; }
-  }, intervalMs);
 
   return probe ? probe.state : 'suspended';
 }

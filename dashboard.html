@@ -298,12 +298,12 @@ function readControlsIntoSettings(c) {
   return s;
 }
 
-// Guarda los ajustes de un personaje: valida que los umbrales no coincidan,
-// persiste en localStorage y se lo notifica al overlay.
-async function saveCharacterSettings(c) {
+// Guarda los ajustes de un personaje: valida que los umbrales no coincidan
+// solo cuando se cambia el monto, persiste en localStorage y se lo notifica al overlay.
+async function saveCharacterSettings(c, changedField) {
   const s = readControlsIntoSettings(c);
   const other = c === CHARACTER_MIGUELIUM ? CHARACTER_ROWLET : CHARACTER_MIGUELIUM;
-  if (s.amount === settings[other].amount) {
+  if (changedField === 'amount' && s.amount === settings[other].amount) {
     flash('Miguelium y Ms. Rowlet no pueden tener el mismo umbral de bits');
     applySettingsToControls();
     return false;
@@ -321,12 +321,12 @@ async function saveCharacterSettings(c) {
 }
 
 function wireCharacterControls(c) {
-  ctrl(c, 'amount').addEventListener('change', () => saveCharacterSettings(c));
-  ctrl(c, 'font').addEventListener('change', () => { saveCharacterSettings(c); });
-  ctrl(c, 'font-size').addEventListener('change', () => { saveCharacterSettings(c); });
-  ctrl(c, 'movement').addEventListener('change', () => { saveCharacterSettings(c); });
-  ctrl(c, 'palette').addEventListener('change', () => { saveCharacterSettings(c); });
-  ctrl(c, 'flip').addEventListener('change', () => { saveCharacterSettings(c); });
+  ctrl(c, 'amount').addEventListener('change', () => saveCharacterSettings(c, 'amount'));
+  ctrl(c, 'font').addEventListener('change', () => { saveCharacterSettings(c, 'font'); });
+  ctrl(c, 'font-size').addEventListener('change', () => { saveCharacterSettings(c, 'font-size'); });
+  ctrl(c, 'movement').addEventListener('change', () => { saveCharacterSettings(c, 'movement'); });
+  ctrl(c, 'palette').addEventListener('change', () => { saveCharacterSettings(c, 'palette'); });
+  ctrl(c, 'flip').addEventListener('change', () => { saveCharacterSettings(c, 'flip'); });
   $('btn-save-' + c).addEventListener('click', () => saveCharacterSettings(c));
   $('btn-test-' + c).addEventListener('click', () => {
     readControlsIntoSettings(c);
