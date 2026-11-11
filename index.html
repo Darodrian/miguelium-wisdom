@@ -107,7 +107,7 @@
 
 <script type="module">
 import {
-  cfg, configured, saveAmount, createBridge,
+  cfg, configured, createBridge,
 } from './js/bridge.js';
 import { getAccessToken, EventSubClient } from './js/twitch.js';
 import { fetchCheerState, fetchCharacterState } from './js/cloud.js';
@@ -115,7 +115,7 @@ import { speak, loadEngine, unlockAudio, setMuted } from './js/tts.js';
 import { forSpeech, schedulePacing } from './js/speech.js';
 import {
   CHARACTER_MIGUELIUM, CHARACTER_ROWLET, CHARACTERS,
-  readAllSettings, saveAllSettings, defaultAmountFor, migrateLegacyCharacter, isValidCharacter,
+  readAllSettings, defaultAmountFor, migrateLegacyCharacter, isValidCharacter,
 } from './js/characters.js';
 
 const BROADCASTER_ID = (() => {
@@ -213,7 +213,6 @@ async function loadCheerThreshold() {
     if (cloud && Number.isFinite(cloud.cheer_threshold) && cloud.cheer_threshold > 0) {
       const n = Math.floor(cloud.cheer_threshold);
       settings[CHARACTER_MIGUELIUM].amount = n;
-      saveAmount(BROADCASTER_ID, n);
     }
   } catch (e) {
     console.warn('[overlay] cloud cheer state unavailable, using localStorage', (e && e.message) || e);
@@ -408,11 +407,6 @@ if (configured() && BROADCASTER_ID) {
     const n = Number(p && p.amount);
     if (Number.isFinite(n) && n > 0) {
       nextSettings.amount = Math.floor(n);
-      // El umbral legado mw_amount_<id> semilla a miguelium; no lo sobreescribe
-      // con el umbral de otro personaje.
-      if (character === CHARACTER_MIGUELIUM) {
-        saveAmount(BROADCASTER_ID, nextSettings.amount);
-      }
       changed = true;
     }
     if (p && p.font !== undefined) { nextSettings.font = p.font; changed = true; }
@@ -423,9 +417,8 @@ if (configured() && BROADCASTER_ID) {
 
     if (changed) {
       settings[character] = nextSettings;
-      saveAllSettings(BROADCASTER_ID, character, nextSettings);
-      // Si este personaje es el que esta en escena, refresca su aspecto al instante.
-      // (solo uno muestra a la vez, asi que no hay conflicto)
+      // El overlay no persiste: la nube es la fuente de verdad y el panel es
+      // el unico que escribe. Asi un broadcast viejo no puede reaparecer.
       if (document.getElementById('img-mig').src.includes(CHARACTERS[character].src)) {
         applyFontFor(character);
         applyStyleFor(character);
@@ -441,7 +434,6 @@ if (configured() && BROADCASTER_ID) {
       const character = isValidCharacter(p.character) ? p.character : CHARACTER_MIGUELIUM;
       const next = { ...settings[character], flip: !!p.flip };
       settings[character] = next;
-      saveAllSettings(BROADCASTER_ID, character, next);
       applyFlipFor(character);
     }
   });

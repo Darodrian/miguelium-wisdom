@@ -90,3 +90,11 @@ test('isValidCharacter reconoce solo los dos personajes', () => {
   assert.equal(isValidCharacter('rowlet'), false);
   assert.equal(isValidCharacter('otro'), false);
 });
+
+test('ms-rowlet no hereda el umbral legado de miguelium', () => {
+  store.clear();
+  localStorage.setItem('mw_amount_b1', '153');
+  assert.equal(readAllSettings('b1', CHARACTER_ROWLET).amount, 100);
+  assert.equal(defaultAmountFor('b1', CHARACTER_ROWLET), 100);
+  assert.equal(defaultAmountFor('b1', CHARACTER_MIGUELIUM), 153);
+});

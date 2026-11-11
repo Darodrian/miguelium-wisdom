@@ -367,16 +367,17 @@ function applySettingsToControls() {
   }
 }
 
-// Lee los controles de un personaje y los guarda en settings[c].
+// Lee los controles de un personaje. Devuelve una copia para no pisar la
+// memoria (ni la nube) con un valor a medio teclear que luego se rechace.
 function readControlsIntoSettings(c) {
-  const s = settings[c];
-  s.amount = Math.max(1, Math.floor(Number(ctrl(c, 'amount').value) || DEFAULT_AMOUNT));
-  s.font = ctrl(c, 'font').value;
-  s.fontSize = Math.max(12, Math.floor(Number(ctrl(c, 'font-size').value) || 22));
-  s.movement = ctrl(c, 'movement').value;
-  s.palette = ctrl(c, 'palette').value;
-  s.flip = ctrl(c, 'flip').checked;
-  return s;
+  return {
+    amount: Math.max(1, Math.floor(Number(ctrl(c, 'amount').value) || DEFAULT_AMOUNT)),
+    font: ctrl(c, 'font').value,
+    fontSize: Math.max(12, Math.floor(Number(ctrl(c, 'font-size').value) || 22)),
+    movement: ctrl(c, 'movement').value,
+    palette: ctrl(c, 'palette').value,
+    flip: ctrl(c, 'flip').checked,
+  };
 }
 
 // Guarda los ajustes de un personaje: valida que los umbrales no coincidan
@@ -409,7 +410,7 @@ function wireCharacterControls(c) {
   ctrl(c, 'palette').addEventListener('change', () => { saveCharacterSettings(c, 'palette'); });
   ctrl(c, 'flip').addEventListener('change', () => { saveCharacterSettings(c, 'flip'); });
   $('btn-test-' + c).addEventListener('click', () => {
-    readControlsIntoSettings(c);
+    settings[c] = readControlsIntoSettings(c);
     if (roomBridge && roomActive) roomBridge.sendTest(c);
   });
 }
@@ -430,13 +431,13 @@ function readSettings() {
   return out;
 }
 
+// Difunde el estado en memoria (ya validado y sincronizado con la nube). No
+// vuelve a leer localStorage: una copia local vieja no debe resucitar un valor
+// que la nube ya corrigio.
 function broadcastSettings() {
   if (!roomBridge) return;
-  const next = readSettings();
-  settings[CHARACTER_MIGUELIUM] = next[CHARACTER_MIGUELIUM];
-  settings[CHARACTER_ROWLET] = next[CHARACTER_ROWLET];
-  roomBridge.sendSet({ character: CHARACTER_MIGUELIUM, ...next[CHARACTER_MIGUELIUM] });
-  roomBridge.sendSet({ character: CHARACTER_ROWLET, ...next[CHARACTER_ROWLET] });
+  roomBridge.sendSet({ character: CHARACTER_MIGUELIUM, ...settings[CHARACTER_MIGUELIUM] });
+  roomBridge.sendSet({ character: CHARACTER_ROWLET, ...settings[CHARACTER_ROWLET] });
 }
 
 function showConnected(connected) {
@@ -606,19 +607,9 @@ applySettingsToControls();
 wireAllControls();
 if (roomBridge && roomActive) broadcastSettings();
 
-// Otra pestaña del panel cambio un ajuste de un personaje: sincroniza la
-// memoria y los controles de esta pestaña para no difundir valores viejos.
-window.addEventListener('storage', (e) => {
-  if (!e.key) return;
-  // mwchar_<broadcaster>_<character>_<setting>
-  const m = /^mwchar_(?:([^_]*)_)?(miguelium|ms-rowlet)_(amount|font|fontSize|movement|palette|flip)$/.exec(e.key);
-  if (!m) return;
-  const s = readSettings();
-  settings[CHARACTER_MIGUELIUM] = s[CHARACTER_MIGUELIUM];
-  settings[CHARACTER_ROWLET] = s[CHARACTER_ROWLET];
-  applySettingsToControls();
-  if (roomBridge && roomActive) broadcastSettings();
-});
+// La nube manda. No se escuchan cambios de localStorage: una copia local
+// vieja (otra pestaña, un overlay con su propio perfil) no puede reemplazar
+// un valor que ya se cargo desde Supabase. Cada pestaña lee la nube al abrir.
 
 // Mute del preview: el panel guarda el estado y el overlay solo obedece.
 // Se reenvia al cargar el iframe para que un reload no pierda el mudo.
@@ -651,7 +642,8 @@ async function loadCloudSettings(broadcasterId) {
     if (cs && Number.isFinite(cs.amount) && cs.amount > 0) {
       settings[c].amount = Math.floor(cs.amount);
       if (cs.font) settings[c].font = cs.font;
-      if (cs.fontSize) settings[c].fontSize = Number(cs.fontSize);
+      const cloudFontSize = cs.font_size ?? cs.fontSize;
+      if (cloudFontSize) settings[c].fontSize = Number(cloudFontSize);
       if (cs.movement) settings[c].movement = cs.movement;
       if (cs.palette) settings[c].palette = cs.palette;
       if (typeof cs.flip === 'boolean') settings[c].flip = cs.flip;
