@@ -170,14 +170,15 @@
     </div>
   </div>
 
-  <div class="panel">
-    <h2>Vista previa</h2>
-    <div id="preview-shell"><iframe id="preview" title="Vista previa del overlay" hidden></iframe></div>
-    <p class="note" id="preview-note">Genera una clave para ver aqui el mismo overlay que se pone en OBS.</p>
-  </div>
+  <div style="display:flex; flex-direction:column; gap:18px;">
+    <div class="panel">
+      <h2>Vista previa</h2>
+      <div id="preview-shell"><iframe id="preview" title="Vista previa del overlay" hidden></iframe></div>
+      <p class="note" id="preview-note">Genera una clave para ver aqui el mismo overlay que se pone en OBS.</p>
+    </div>
 
-  <!-- Ajustes por personaje: en la columna de preview, debajo del preview. -->
-  <div id="settings-sections" hidden>
+    <!-- Ajustes por personaje: debajo del preview, ancho completo de la columna derecha. -->
+    <div id="settings-sections" hidden>
     <div class="panel">
       <h2>Ajustes por personaje</h2>
       <div class="settings-grid">
@@ -284,6 +285,7 @@
       <button id="btn-test-miguelium" type="button">Probar Miguelium</button>
       <button id="btn-test-ms-rowlet" type="button">Probar Ms. Rowlet</button>
     </div>
+  </div>
   </div>
   </div>
   </div>
