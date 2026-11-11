@@ -39,6 +39,61 @@
     background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
     padding: 16px 18px; display: flex; flex-direction: column; gap: 14px;
   }
+
+  /* Compact two-column settings grid: both characters side by side, no scrolling. */
+  #settings-sections {
+    gap: 0;
+  }
+  .settings-grid {
+    display: grid;
+    grid-template-columns: 150px 1fr 1fr;
+    gap: 10px 14px;
+    margin-top: 6px;
+  }
+  .char-header {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 2px;
+  }
+  .char-header:nth-child(1) { grid-column: 2; }
+  .char-header:nth-child(2) { grid-column: 3; }
+  .char-thumb {
+    width: 34px; height: 34px; object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.35));
+  }
+  .char-name {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+    text-transform: uppercase; color: var(--text);
+  }
+  .setting-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+    text-transform: uppercase; color: var(--accent);
+    padding-top: 8px; white-space: nowrap; align-self: start;
+  }
+  .ctrl-cell {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .ctrl-cell input[type="checkbox"] {
+    align-self: start; margin-top: 2px;
+  }
+  .test-cell {
+    grid-column: 1 / -1;
+    display: flex; gap: 10px; justify-content: center;
+    margin-top: 2px; padding-top: 10px; border-top: 1px solid var(--line);
+  }
+  .test-cell button { flex: 1 1 0; }
+
+  @media (max-width: 640px) {
+    .settings-grid { grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+    .setting-label { grid-column: 1 / -1; padding-top: 6px; }
+    .char-header:nth-child(1) { grid-column: 1 / -1; }
+    .char-header:nth-child(2) { grid-column: 1 / -1; }
+    .char-header { flex-direction: row; gap: 10px; align-items: center; text-align: left; }
+    .char-name { text-align: left; }
+    .test-cell { flex-direction: column; }
+    .test-cell button { flex: none; width: 100%; }
+  }
   .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
   .msg { font-size: 12px; color: var(--accent); min-height: 16px; margin-top: 8px; }
   .dot { width: 9px; height: 9px; border-radius: 50%; background: #64748b; flex: 0 0 auto; }
@@ -110,32 +165,64 @@
     </div>
 
     <div id="settings-sections" hidden>
-      <div class="panel" id="settings-miguelium">
-        <h2>Miguelium</h2>
-        <label class="field">Bits para activar
-          <div class="row">
-            <input id="amount-miguelium" type="number" min="1" step="1" style="flex:1" value="100">
-            <button id="btn-save-miguelium" type="button">Guardar</button>
-          </div>
-        </label>
-        <label class="field">Fuente
+      <div class="settings-grid">
+        <!-- Character headers -->
+        <div class="char-header">
+          <img src="assets/miguelium.png" alt="Miguelium" class="char-thumb">
+          <div class="char-name">Miguelium</div>
+        </div>
+        <div class="char-header">
+          <img src="assets/ms-rowlet.png" alt="Ms. Rowlet" class="char-thumb">
+          <div class="char-name">Ms. Rowlet</div>
+        </div>
+
+        <!-- Bits para activar -->
+        <div class="setting-label">Bits para activar</div>
+        <div class="ctrl-cell"><input id="amount-miguelium" type="number" min="1" step="1" value="100"></div>
+        <div class="ctrl-cell"><input id="amount-ms-rowlet" type="number" min="1" step="1" value="100"></div>
+
+        <!-- Fuente -->
+        <div class="setting-label">Fuente</div>
+        <div class="ctrl-cell">
           <select id="font-miguelium">
             <option value="Georgia">Georgia (por defecto)</option>
             <option value="ComingSoon">Coming Soon</option>
             <option value="ZPix">ZPix</option>
           </select>
-        </label>
-        <label class="field">Tamaño de fuente (px)
-          <input id="font-size-miguelium" type="number" min="12" max="72" step="2" value="22">
-        </label>
-        <label class="field">Movimiento al hablar
+        </div>
+        <div class="ctrl-cell">
+          <select id="font-ms-rowlet">
+            <option value="Georgia">Georgia (por defecto)</option>
+            <option value="ComingSoon">Coming Soon</option>
+            <option value="ZPix">ZPix</option>
+          </select>
+        </div>
+
+        <!-- Tamaño de fuente -->
+        <div class="setting-label">Tamaño de fuente (px)</div>
+        <div class="ctrl-cell"><input id="font-size-miguelium" type="number" min="12" max="72" step="2" value="22"></div>
+        <div class="ctrl-cell"><input id="font-size-ms-rowlet" type="number" min="12" max="72" step="2" value="22"></div>
+
+        <!-- Movimiento al hablar -->
+        <div class="setting-label">Movimiento al hablar</div>
+        <div class="ctrl-cell">
           <select id="movement-miguelium">
             <option value="off">Sin movimiento</option>
             <option value="swing">Balanceo</option>
             <option value="bob">Subir y bajar</option>
           </select>
-        </label>
-        <label class="field">Paleta de colores
+        </div>
+        <div class="ctrl-cell">
+          <select id="movement-ms-rowlet">
+            <option value="off">Sin movimiento</option>
+            <option value="swing">Balanceo</option>
+            <option value="bob">Subir y bajar</option>
+          </select>
+        </div>
+
+        <!-- Paleta de colores -->
+        <div class="setting-label">Paleta de colores</div>
+        <div class="ctrl-cell">
           <select id="palette-miguelium">
             <option value="default">Por defecto</option>
             <option value="grape">Grape</option>
@@ -152,37 +239,8 @@
             <option value="yellow">Yellow</option>
             <option value="chalk">Chalk</option>
           </select>
-        </label>
-        <label class="row"><input id="flip-miguelium" type="checkbox"> Voltear horizontal</label>
-        <button id="btn-test-miguelium" type="button">Probar Miguelium</button>
-      </div>
-
-      <div class="panel" id="settings-ms-rowlet">
-        <h2>Ms. Rowlet</h2>
-        <label class="field">Bits para activar
-          <div class="row">
-            <input id="amount-ms-rowlet" type="number" min="1" step="1" style="flex:1" value="100">
-            <button id="btn-save-ms-rowlet" type="button">Guardar</button>
-          </div>
-        </label>
-        <label class="field">Fuente
-          <select id="font-ms-rowlet">
-            <option value="Georgia">Georgia (por defecto)</option>
-            <option value="ComingSoon">Coming Soon</option>
-            <option value="ZPix">ZPix</option>
-          </select>
-        </label>
-        <label class="field">Tamaño de fuente (px)
-          <input id="font-size-ms-rowlet" type="number" min="12" max="72" step="2" value="22">
-        </label>
-        <label class="field">Movimiento al hablar
-          <select id="movement-ms-rowlet">
-            <option value="off">Sin movimiento</option>
-            <option value="swing">Balanceo</option>
-            <option value="bob">Subir y bajar</option>
-          </select>
-        </label>
-        <label class="field">Paleta de colores
+        </div>
+        <div class="ctrl-cell">
           <select id="palette-ms-rowlet">
             <option value="default">Por defecto</option>
             <option value="grape">Grape</option>
@@ -199,9 +257,18 @@
             <option value="yellow">Yellow</option>
             <option value="chalk">Chalk</option>
           </select>
-        </label>
-        <label class="row"><input id="flip-ms-rowlet" type="checkbox"> Voltear horizontal</label>
-        <button id="btn-test-ms-rowlet" type="button">Probar Ms. Rowlet</button>
+        </div>
+
+        <!-- Voltear horizontal -->
+        <div class="setting-label">Voltear horizontal</div>
+        <div class="ctrl-cell"><input id="flip-miguelium" type="checkbox"></div>
+        <div class="ctrl-cell"><input id="flip-ms-rowlet" type="checkbox"></div>
+
+        <!-- Test buttons -->
+        <div class="test-cell">
+          <button id="btn-test-miguelium" type="button">Probar Miguelium</button>
+          <button id="btn-test-ms-rowlet" type="button">Probar Ms. Rowlet</button>
+        </div>
       </div>
     </div>
   </div>
@@ -335,7 +402,6 @@ function wireCharacterControls(c) {
   ctrl(c, 'movement').addEventListener('change', () => { saveCharacterSettings(c, 'movement'); });
   ctrl(c, 'palette').addEventListener('change', () => { saveCharacterSettings(c, 'palette'); });
   ctrl(c, 'flip').addEventListener('change', () => { saveCharacterSettings(c, 'flip'); });
-  $('btn-save-' + c).addEventListener('click', () => saveCharacterSettings(c));
   $('btn-test-' + c).addEventListener('click', () => {
     readControlsIntoSettings(c);
     if (roomBridge && roomActive) roomBridge.sendTest(c);
