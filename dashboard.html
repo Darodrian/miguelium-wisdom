@@ -42,6 +42,7 @@
 
   /* Compact two-column settings grid: both characters side by side, no scrolling. */
   #settings-sections {
+    margin-top: 0;
     gap: 0;
   }
   .settings-grid {
@@ -163,113 +164,9 @@
       <label class="row"><input id="test-overlay" type="checkbox" checked> Mostrar tambien en el overlay de OBS</label>
       <label class="row"><input id="mute-preview" type="checkbox"> Silenciar voz del preview</label>
     </div>
-
-    <div id="settings-sections" hidden>
-      <div class="settings-grid">
-        <!-- Character headers -->
-        <div class="char-header">
-          <img src="assets/miguelium.png" alt="Miguelium" class="char-thumb">
-          <div class="char-name">Miguelium</div>
-        </div>
-        <div class="char-header">
-          <img src="assets/ms-rowlet.png" alt="Ms. Rowlet" class="char-thumb">
-          <div class="char-name">Ms. Rowlet</div>
-        </div>
-
-        <!-- Bits para activar -->
-        <div class="setting-label">Bits para activar</div>
-        <div class="ctrl-cell"><input id="amount-miguelium" type="number" min="1" step="1" value="100"></div>
-        <div class="ctrl-cell"><input id="amount-ms-rowlet" type="number" min="1" step="1" value="100"></div>
-
-        <!-- Fuente -->
-        <div class="setting-label">Fuente</div>
-        <div class="ctrl-cell">
-          <select id="font-miguelium">
-            <option value="Georgia">Georgia (por defecto)</option>
-            <option value="ComingSoon">Coming Soon</option>
-            <option value="ZPix">ZPix</option>
-          </select>
-        </div>
-        <div class="ctrl-cell">
-          <select id="font-ms-rowlet">
-            <option value="Georgia">Georgia (por defecto)</option>
-            <option value="ComingSoon">Coming Soon</option>
-            <option value="ZPix">ZPix</option>
-          </select>
-        </div>
-
-        <!-- Tamaño de fuente -->
-        <div class="setting-label">Tamaño de fuente (px)</div>
-        <div class="ctrl-cell"><input id="font-size-miguelium" type="number" min="12" max="72" step="2" value="22"></div>
-        <div class="ctrl-cell"><input id="font-size-ms-rowlet" type="number" min="12" max="72" step="2" value="22"></div>
-
-        <!-- Movimiento al hablar -->
-        <div class="setting-label">Movimiento al hablar</div>
-        <div class="ctrl-cell">
-          <select id="movement-miguelium">
-            <option value="off">Sin movimiento</option>
-            <option value="swing">Balanceo</option>
-            <option value="bob">Subir y bajar</option>
-          </select>
-        </div>
-        <div class="ctrl-cell">
-          <select id="movement-ms-rowlet">
-            <option value="off">Sin movimiento</option>
-            <option value="swing">Balanceo</option>
-            <option value="bob">Subir y bajar</option>
-          </select>
-        </div>
-
-        <!-- Paleta de colores -->
-        <div class="setting-label">Paleta de colores</div>
-        <div class="ctrl-cell">
-          <select id="palette-miguelium">
-            <option value="default">Por defecto</option>
-            <option value="grape">Grape</option>
-            <option value="sapphire">Sapphire</option>
-            <option value="ocean">Ocean</option>
-            <option value="emerald">Emerald</option>
-            <option value="green">Green</option>
-            <option value="snow">Snow</option>
-            <option value="carbon">Carbon</option>
-            <option value="orange">Orange</option>
-            <option value="chocolate">Chocolate</option>
-            <option value="cherry">Cherry</option>
-            <option value="red">Red</option>
-            <option value="yellow">Yellow</option>
-            <option value="chalk">Chalk</option>
-          </select>
-        </div>
-        <div class="ctrl-cell">
-          <select id="palette-ms-rowlet">
-            <option value="default">Por defecto</option>
-            <option value="grape">Grape</option>
-            <option value="sapphire">Sapphire</option>
-            <option value="ocean">Ocean</option>
-            <option value="emerald">Emerald</option>
-            <option value="green">Green</option>
-            <option value="snow">Snow</option>
-            <option value="carbon">Carbon</option>
-            <option value="orange">Orange</option>
-            <option value="chocolate">Chocolate</option>
-            <option value="cherry">Cherry</option>
-            <option value="red">Red</option>
-            <option value="yellow">Yellow</option>
-            <option value="chalk">Chalk</option>
-          </select>
-        </div>
-
-        <!-- Voltear horizontal -->
-        <div class="setting-label">Voltear horizontal</div>
-        <div class="ctrl-cell"><input id="flip-miguelium" type="checkbox"></div>
-        <div class="ctrl-cell"><input id="flip-ms-rowlet" type="checkbox"></div>
-
-        <!-- Test buttons -->
-        <div class="test-cell">
-          <button id="btn-test-miguelium" type="button">Probar Miguelium</button>
-          <button id="btn-test-ms-rowlet" type="button">Probar Ms. Rowlet</button>
-        </div>
-      </div>
+    <div class="panel">
+      <h2>Eventos</h2>
+      <ul id="events"><li class="empty">Esperando cheers...</li></ul>
     </div>
   </div>
 
@@ -277,13 +174,117 @@
     <h2>Vista previa</h2>
     <div id="preview-shell"><iframe id="preview" title="Vista previa del overlay" hidden></iframe></div>
     <p class="note" id="preview-note">Genera una clave para ver aqui el mismo overlay que se pone en OBS.</p>
-    <div class="panel">
-      <h2>Eventos</h2>
-      <ul id="events"><li class="empty">Esperando cheers...</li></ul>
+  </div>
+
+  <!-- Ajustes por personaje: en la columna de preview, debajo del preview. -->
+  <div id="settings-sections" hidden>
+  <div class="settings-grid">
+    <!-- Character headers -->
+    <div class="char-header">
+      <img src="assets/miguelium.png" alt="Miguelium" class="char-thumb">
+      <div class="char-name">Miguelium</div>
+    </div>
+    <div class="char-header">
+      <img src="assets/ms-rowlet.png" alt="Ms. Rowlet" class="char-thumb">
+      <div class="char-name">Ms. Rowlet</div>
+    </div>
+
+    <!-- Bits para activar -->
+    <div class="setting-label">Bits para activar</div>
+    <div class="ctrl-cell"><input id="amount-miguelium" type="number" min="1" step="1" value="100"></div>
+    <div class="ctrl-cell"><input id="amount-ms-rowlet" type="number" min="1" step="1" value="100"></div>
+
+    <!-- Fuente -->
+    <div class="setting-label">Fuente</div>
+    <div class="ctrl-cell">
+      <select id="font-miguelium">
+        <option value="Georgia">Georgia (por defecto)</option>
+        <option value="ComingSoon">Coming Soon</option>
+        <option value="ZPix">ZPix</option>
+      </select>
+    </div>
+    <div class="ctrl-cell">
+      <select id="font-ms-rowlet">
+        <option value="Georgia">Georgia (por defecto)</option>
+        <option value="ComingSoon">Coming Soon</option>
+        <option value="ZPix">ZPix</option>
+      </select>
+    </div>
+
+    <!-- Tamaño de fuente -->
+    <div class="setting-label">Tamaño de fuente (px)</div>
+    <div class="ctrl-cell"><input id="font-size-miguelium" type="number" min="12" max="72" step="2" value="22"></div>
+    <div class="ctrl-cell"><input id="font-size-ms-rowlet" type="number" min="12" max="72" step="2" value="22"></div>
+
+    <!-- Movimiento al hablar -->
+    <div class="setting-label">Movimiento al hablar</div>
+    <div class="ctrl-cell">
+      <select id="movement-miguelium">
+        <option value="off">Sin movimiento</option>
+        <option value="swing">Balanceo</option>
+        <option value="bob">Subir y bajar</option>
+      </select>
+    </div>
+    <div class="ctrl-cell">
+      <select id="movement-ms-rowlet">
+        <option value="off">Sin movimiento</option>
+        <option value="swing">Balanceo</option>
+        <option value="bob">Subir y bajar</option>
+      </select>
+    </div>
+
+    <!-- Paleta de colores -->
+    <div class="setting-label">Paleta de colores</div>
+    <div class="ctrl-cell">
+      <select id="palette-miguelium">
+        <option value="default">Por defecto</option>
+        <option value="grape">Grape</option>
+        <option value="sapphire">Sapphire</option>
+        <option value="ocean">Ocean</option>
+        <option value="emerald">Emerald</option>
+        <option value="green">Green</option>
+        <option value="snow">Snow</option>
+        <option value="carbon">Carbon</option>
+        <option value="orange">Orange</option>
+        <option value="chocolate">Chocolate</option>
+        <option value="cherry">Cherry</option>
+        <option value="red">Red</option>
+        <option value="yellow">Yellow</option>
+        <option value="chalk">Chalk</option>
+      </select>
+    </div>
+    <div class="ctrl-cell">
+      <select id="palette-ms-rowlet">
+        <option value="default">Por defecto</option>
+        <option value="grape">Grape</option>
+        <option value="sapphire">Sapphire</option>
+        <option value="ocean">Ocean</option>
+        <option value="emerald">Emerald</option>
+        <option value="green">Green</option>
+        <option value="snow">Snow</option>
+        <option value="carbon">Carbon</option>
+        <option value="orange">Orange</option>
+        <option value="chocolate">Chocolate</option>
+        <option value="cherry">Cherry</option>
+        <option value="red">Red</option>
+        <option value="yellow">Yellow</option>
+        <option value="chalk">Chalk</option>
+      </select>
+    </div>
+
+    <!-- Voltear horizontal -->
+    <div class="setting-label">Voltear horizontal</div>
+    <div class="ctrl-cell"><input id="flip-miguelium" type="checkbox"></div>
+    <div class="ctrl-cell"><input id="flip-ms-rowlet" type="checkbox"></div>
+
+    <!-- Test buttons -->
+    <div class="test-cell">
+      <button id="btn-test-miguelium" type="button">Probar Miguelium</button>
+      <button id="btn-test-ms-rowlet" type="button">Probar Ms. Rowlet</button>
     </div>
   </div>
 </div>
-
+</div>
 <script type="module">
 import {
   cfg, configured, savedAmount, createBridge,
