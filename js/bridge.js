@@ -1,7 +1,7 @@
 // Versiones fijas de CDN: la sala usa Supabase Realtime, el chat lo escucha ComfyJS.
 import { cfg } from './config.js';
 
-const SUPA_URL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/+esm';
+const SUPA_URL = 'https://esm.sh/@supabase/supabase-js@2.117.2';
 
 const AMOUNT_PFX = 'mw_amount_';
 const PREVIEW_MUTE_STORE = 'mw_preview_mute';

@@ -75,7 +75,7 @@ export async function loadEngine() {
       WebSampler,
       PitchManager,
       WebPlayer,
-    } = await import('https://cdn.jsdelivr.net/npm/animalese-tts@1.1.3/dist/animalese.browser.mjs');
+    } = await import('https://esm.sh/animalese-tts@1.1.3');
 
     const map = await (await fetch(SPRITE_MAP)).json();
 
@@ -186,11 +186,8 @@ export function audioState() {
 }
 
 export async function unlockAudio({ attempts = 40, intervalMs = 250 } = {}) {
-  if (!probe) {
-    const Ctor = window.AudioContext ?? window.webkitAudioContext;
-    if (!Ctor) return 'unsupported';
-    probe = new Ctor();
-  }
+  const Ctor = window.AudioContext ?? window.webkitAudioContext;
+  if (!Ctor) return 'unsupported';
 
   clearInterval(unlockTimer);
   unlockTimer = null;
@@ -205,6 +202,9 @@ export async function unlockAudio({ attempts = 40, intervalMs = 250 } = {}) {
   };
 
   const nudge = async () => {
+    // Crea el contexto de probe solo al primer gesto: el navegador bloquea
+    // AudioContext si no hay interaccion del usuario.
+    if (!probe) probe = new Ctor();
     const ctxs = [probe, ...playbackTargets].filter((c) => c && typeof c.resume === 'function');
     await Promise.all(ctxs.map(async (c) => {
       try { await c.resume(); } catch {}
@@ -227,6 +227,6 @@ export async function unlockAudio({ attempts = 40, intervalMs = 250 } = {}) {
     if (unlockAttempts <= 0) { clearInterval(unlockTimer); unlockTimer = null; }
   }, intervalMs);
 
-  return probe.state;
+  return probe ? probe.state : 'suspended';
 }
 
