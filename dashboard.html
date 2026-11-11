@@ -178,9 +178,11 @@
 
   <!-- Ajustes por personaje: en la columna de preview, debajo del preview. -->
   <div id="settings-sections" hidden>
-  <div class="settings-grid">
-    <!-- Character headers -->
-    <div class="char-header">
+    <div class="panel">
+      <h2>Ajustes por personaje</h2>
+      <div class="settings-grid">
+        <!-- Character headers -->
+        <div class="char-header">
       <img src="assets/miguelium.png" alt="Miguelium" class="char-thumb">
       <div class="char-name">Miguelium</div>
     </div>
@@ -283,7 +285,8 @@
       <button id="btn-test-ms-rowlet" type="button">Probar Ms. Rowlet</button>
     </div>
   </div>
-</div>
+  </div>
+  </div>
 </div>
 <script type="module">
 import {
@@ -465,7 +468,7 @@ function updatePreview() {
   if (broadcasterId) {
     PREVIEW.src = buildPreviewUrl(broadcasterId);
     PREVIEW.hidden = false;
-    PREVIEW_NOTE.textContent = 'Preview en vivo: lo que veas aqui es lo que se pone en OBS.';
+    PREVIEW_NOTE.hidden = true;
   } else {
     PREVIEW.hidden = true;
     PREVIEW_NOTE.textContent = 'Conecta tu cuenta de Twitch para ver el overlay en el preview.';
